@@ -1,0 +1,277 @@
+const axios = require("axios");
+const fs = require("fs-extra");
+const path = require("path");
+
+const emojiVoiceDB = {
+    "🥺": {
+        url: "https://drive.google.com/uc?export=download&id=1Gyi-zGUv5Yctk5eJRYcqMD2sbgrS_c1R",
+        caption: "✨ 𝖬𝗂𝗌 𝖸𝗈𝗎 𝖡𝖾𝗉𝗂... 🥺"
+    },
+    "😍": {
+        url: "https://drive.google.com/uc?export=download&id=1lIsUIvmH1GFnI-Uz-2WSy8-5u69yQ0By",
+        caption: "💖 𝖳𝗈𝗆𝖺𝗋 𝗉𝗋𝗈𝗍𝗂 𝖻𝗁𝖺𝗅𝗈𝖻𝖺𝗌𝖺 𝖽𝗂𝗇𝗄𝖾 𝖽𝗂𝗇 𝖻𝖺𝗋𝖼𝗁𝖾... 😍"
+    },
+    "😭": {
+        url: "https://drive.google.com/uc?export=download&id=1qU27pXIm5MV1uTyJVEVslrfLP4odHwsa",
+        caption: "😢 𝖩𝖺𝗇 𝗍𝗎𝗆𝗂 𝗄𝖺𝗇𝗇𝖺 𝗄𝗈𝗋𝗍𝖾𝖼𝗁𝗈 𝖪𝗈𝗇𝗈... 😭"
+    },
+    "😡": {
+        url: "https://drive.google.com/uc?export=download&id=1S_I7b3_f4Eb8znzm10vWn99Y7XHaSPYa",
+        caption: "⚡ 𝖱𝖺𝗀 𝗄𝗈𝗆𝖺𝗈, 𝗆𝖺𝖿 𝗄𝗈𝗋𝖺𝗂 𝖻𝗈𝗋𝗈𝗍to... 😡"
+    },
+    "🙄": {
+        url: "https://drive.google.com/uc?export=download&id=1gtovrHXVmQHyhK2I9F8d2Xbu7nKAa5GD",
+        caption: "🎭 𝖤𝖻𝗁𝖺𝖻𝖾 𝗍𝖺𝗄𝗂𝗈 𝗇𝖺 𝗍𝗎𝗆𝗂 𝖻𝗁𝖾𝖻𝖾 𝗅𝗈𝗃𝗃𝖺 𝗅𝖺𝗀𝖾 ... 🙄"
+    },
+    "😑": {
+        url: "https://drive.google.com/uc?export=download&id=1azElOD2QeaMbV2OdCY_W3tErD8JQ3T7P",
+        caption: "🍋 𝖫𝖾𝖻𝗎 𝗄𝗁𝖺𝗈 𝗃𝖺𝗇 𝗌𝗈𝖻 𝗍𝗁𝗂𝗄 𝗁𝗈𝗒𝖾 𝗃𝖺𝖻𝖾 😑"
+    },
+    "😒": {
+        url: "https://drive.google.com/uc?export=download&id=1tbKe8yiU0RbINPlQgOwnig7KPXPDzjXv",
+        caption: "𝖡𝗂𝗋𝗈𝗄𝗍 𝗄𝗈𝗋𝗈 𝗇𝖺 𝗃𝖺𝗇... ❤"
+    },
+    "🤣": {
+        url: "https://drive.google.com/uc?export=download&id=1Hvy_Xee8dAYp-Nul7iZtAq-xQt6-rNpU",
+        caption: "😂 𝖧𝖺𝗌𝗅𝖾 𝗍𝗈𝗆𝖺𝗄𝖾 𝗉𝖺𝗀𝗈𝗅 𝖤𝗋 𝗆𝗈𝗍𝗈 𝗅𝖺𝗀𝖾... 🤣"
+    },
+    "💔": {
+        url: "https://drive.google.com/uc?export=download&id=1jQDnFc5MyxRFg_7PsZXCVJisIIqTI8ZY",
+        caption: "🎵 𝖿𝖾𝖾𝗅 𝗍𝗁𝗂𝗌 𝗌𝗈𝗇𝗀... 💔"
+    },
+    "🙂": {
+        url: "https://drive.google.com/uc?export=download&id=1_sehHc-sDtzuqyB2kL_XGMuvm2Bv-Dqc",
+        caption: "💫 𝖳𝗎𝗆𝗂 𝗄𝗂 𝖺𝖽𝗁𝗈 𝖺𝗆𝖺𝗄𝖾 𝖻𝗁𝖺𝗅𝗈𝖻𝖺𝗌𝗈 ... 🙂"
+    }
+};
+
+module.exports = {
+    config: {
+        name: "emoji_voice",
+        aliases: ["evoice", "ev"],
+        version: "1.3.0",
+        author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
+        countDown: 3,
+        role: 0,
+        category: "entertainment",
+        shortDescription: {
+            en: "🎵 𝖤𝗆𝗈𝗃𝗂-𝖻𝖺𝗌𝖾𝖽 𝗏𝗈𝗂𝖼𝖾 𝗋𝖾𝗌𝗉𝗈𝗇𝗌𝖾𝗌 𝗐𝗂𝗍𝗁 𝖡𝖾𝗇𝗀𝖺𝗅𝗂 𝖼𝖺𝗉𝗍𝗂𝗈𝗇𝗌"
+        },
+        longDescription: {
+            en: "𝖯𝗅𝖺𝗒𝗌 𝗏𝗈𝗂𝖼𝖾 𝗆𝖾𝗌𝗌𝖺𝗀𝖾𝗌 𝖻𝖺𝗌𝖾𝖽 𝗈𝗇 𝖾𝗆𝗈𝗃𝗂𝗌 𝗐𝗂𝗍𝗁 𝖡𝖾𝗇𝗀𝖺𝗅𝗂 𝖼𝖺𝗉𝗍𝗂𝗈𝗇𝗌"
+        },
+        guide: {
+            en: "𝖲𝖾𝗇𝖽 𝖺𝗇𝗒 𝗌𝗎𝗉𝗉𝗈𝗋𝗍𝖾𝖽 𝖾𝗆𝗈𝗃𝗂: 🥺 😍 😭 😡 🙄 😑 😒 🤣 💔 🙂"
+        },
+        dependencies: {
+            "axios": "",
+            "fs-extra": "",
+            "path": ""
+        }
+    },
+
+    onLoad: async function() {
+        try {
+            // Dependency check
+            let dependenciesAvailable = true;
+            try {
+                require("axios");
+                require("fs-extra");
+                require("path");
+            } catch (e) {
+                dependenciesAvailable = false;
+            }
+
+            if (!dependenciesAvailable) {
+                console.error("❌ 𝖬𝗂𝗌𝗌𝗂𝗇𝗀 𝖽𝖾𝗉𝖾𝗇𝖽𝖾𝗇𝖼𝗂𝖾𝗌");
+                return;
+            }
+
+            const cacheDir = path.join(__dirname, 'cache', 'emoji_voice');
+            try {
+                await fs.ensureDir(cacheDir);
+            } catch (dirError) {
+                console.error("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝖼𝗋𝖾𝖺𝗍𝖾 𝖼𝖺𝖼𝗁𝖾 𝖽𝗂𝗋𝖾𝖼𝗍𝗈𝗋𝗒:", dirError);
+                return;
+            }
+            
+            console.log("🔄 𝖯𝗋𝖾-𝖼𝖺𝖼𝗁𝗂𝗇𝗀 𝖾𝗆𝗈𝗃𝗂 𝗏𝗈𝗂𝖼𝖾 𝖿𝗂𝗅𝖾𝗌...");
+            
+            // Download files sequentially to avoid overwhelming the network
+            for (const emoji of Object.keys(emojiVoiceDB)) {
+                const filePath = path.join(cacheDir, `${emoji}.mp3`);
+                if (!await fs.pathExists(filePath)) {
+                    try {
+                        console.log(`📥 𝖣𝗈𝗐𝗇𝗅𝗈𝖺𝖽𝗂𝗇𝗀: ${emoji}`);
+                        const response = await axios({
+                            method: 'GET',
+                            url: emojiVoiceDB[emoji].url,
+                            responseType: 'arraybuffer',
+                            timeout: 60000,
+                            headers: {
+                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                            }
+                        });
+                        
+                        // Verify file has content
+                        if (response.data && response.data.length > 1000) {
+                            await fs.writeFile(filePath, response.data);
+                            console.log(`✅ 𝖲𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒 𝖼𝖺𝖼𝗁𝖾𝖽: ${emoji} (${(response.data.length / 1024 / 1024).toFixed(2)}𝖬𝖡)`);
+                        } else {
+                            throw new Error("𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝖿𝗂𝗅𝖾 𝗌𝗂𝗓𝖾");
+                        }
+                    } catch (error) {
+                        console.error(`❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝖼𝖺𝖼𝗁𝖾 ${emoji}:`, error.message);
+                    }
+                    
+                    // Add delay between downloads to avoid rate limiting
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                } else {
+                    console.log(`✅ 𝖠𝗅𝗋𝖾𝖺𝖽𝗒 𝖼𝖺𝖼𝗁𝖾𝖽: ${emoji}`);
+                }
+            }
+            
+            console.log("✅ 𝖯𝗋𝖾-𝖼𝖺𝖼𝗁𝗂𝗇𝗀 𝖼𝗈𝗆𝗉𝗅𝖾𝗍𝖾𝖽");
+        } catch (error) {
+            console.error("💥 𝖮𝗇𝖫𝗈𝖺𝖽 𝖤𝗋𝗋𝗈𝗋:", error);
+        }
+    },
+
+    onStart: async function({ message, event }) {
+        try {
+            // Dependency check
+            let dependenciesAvailable = true;
+            try {
+                require("axios");
+                require("fs-extra");
+                require("path");
+            } catch (e) {
+                dependenciesAvailable = false;
+            }
+
+            if (!dependenciesAvailable) {
+                return message.reply("❌ 𝖬𝗂𝗌𝗌𝗂𝗇𝗀 𝖽𝖾𝗉𝖾𝗇𝖽𝖾𝗇𝖼𝗂𝖾𝗌. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗂𝗇𝗌𝗍𝖺𝗅𝗅 𝖺𝗑𝗂𝗈𝗌, 𝖿𝗌-𝖾𝗑𝗍𝗋𝖺, 𝖺𝗇𝖽 𝗉𝖺𝗍𝗁.");
+            }
+
+            await message.reply(
+                `🎵 𝖲𝖾𝗇𝖽 𝗈𝗇𝖾 𝗈𝖿 𝗍𝗁𝖾𝗌𝖾 𝖾𝗆𝗈𝗃𝗂𝗌 𝗍𝗈 𝗀𝖾𝗍 𝗏𝗈𝗂𝖼𝖾 𝗋𝖾𝗌𝗉𝗈𝗇𝗌𝖾:\n${Object.keys(emojiVoiceDB).join(' ')}`
+            );
+        } catch (error) {
+            console.error("💥 𝖮𝗇𝖲𝗍𝖺𝗋𝗍 𝖤𝗋𝗋𝗈𝗋:", error);
+            // Don't send error message to avoid spam
+        }
+    },
+
+    onChat: async function({ event, message }) {
+        try {
+            // Dependency check
+            let dependenciesAvailable = true;
+            try {
+                require("axios");
+                require("fs-extra");
+                require("path");
+            } catch (e) {
+                dependenciesAvailable = false;
+            }
+
+            if (!dependenciesAvailable) {
+                return;
+            }
+
+            const { body } = event;
+            
+            if (!body || body.length > 2) return;
+            
+            const emoji = body.trim();
+            if (!emojiVoiceDB[emoji]) return;
+            
+            console.log(`🎵 𝖯𝗋𝗈𝖼𝖾𝗌𝗌𝗂𝗇𝗀 𝖾𝗆𝗈𝗃𝗂: ${emoji}`);
+
+            const cacheDir = path.join(__dirname, 'cache', 'emoji_voice');
+            const filePath = path.join(cacheDir, `${emoji}.mp3`);
+            
+            try {
+                await fs.ensureDir(cacheDir);
+            } catch (dirError) {
+                console.error("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝖼𝗋𝖾𝖺𝗍𝖾 𝖼𝖺𝖼𝗁𝖾 𝖽𝗂𝗋𝖾𝖼𝗍𝗈𝗋𝗒:", dirError);
+                return;
+            }
+
+            let fileExists = false;
+            try {
+                fileExists = await fs.pathExists(filePath);
+            } catch (pathError) {
+                console.error("❌ 𝖤𝗋𝗋𝗈𝗋 𝖼𝗁𝖾𝖼𝗄𝗂𝗇𝗀 𝖿𝗂𝗅𝖾 𝗉𝖺𝗍𝗁:", pathError);
+            }
+
+            if (!fileExists) {
+                try {
+                    console.log(`📥 𝖣𝗈𝗐𝗇𝗅𝗈𝖺𝖽𝗂𝗇𝗀 𝗏𝗈𝗂𝖼𝖾 𝖿𝗂𝗅𝖾 𝖿𝗈𝗋: ${emoji}`);
+                    const response = await axios({
+                        method: 'GET',
+                        url: emojiVoiceDB[emoji].url,
+                        responseType: 'arraybuffer',
+                        timeout: 45000,
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        }
+                    });
+                    
+                    // Verify file has content
+                    if (response.data && response.data.length > 1000) {
+                        await fs.writeFile(filePath, response.data);
+                        console.log(`✅ 𝖲𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒 𝖽𝗈𝗐𝗇𝗅𝗈𝖺𝖽𝖾𝖽: ${emoji}`);
+                    } else {
+                        throw new Error("𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝖿𝗂𝗅𝖾 𝗌𝗂𝗓𝖾");
+                    }
+                } catch (downloadError) {
+                    console.error(`❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝖽𝗈𝗐𝗇𝗅𝗈𝖺𝖽 ${emoji}:`, downloadError.message);
+                    return;
+                }
+            }
+
+            // Verify file is readable before sending
+            try {
+                await fs.access(filePath, fs.constants.R_OK);
+                const stats = await fs.stat(filePath);
+                if (stats.size === 0) {
+                    throw new Error("𝖥𝗂𝗅𝖾 𝗂𝗌 𝖾𝗆𝗉𝗍𝗒");
+                }
+                
+                await message.reply({
+                    body: emojiVoiceDB[emoji].caption,
+                    attachment: fs.createReadStream(filePath)
+                });
+                
+                console.log(`✅ 𝖲𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒 𝗌𝖾𝗇𝗍 𝗏𝗈𝗂𝖼𝖾 𝖿𝗈𝗋: ${emoji}`);
+                
+            } catch (fileError) {
+                console.error(`❌ 𝖤𝗋𝗋𝗈𝗋 𝗋𝖾𝖺𝖽𝗂𝗇𝗀 𝖿𝗂𝗅𝖾 ${emoji}:`, fileError.message);
+                
+                // Try to re-download the file
+                try {
+                    await fs.unlink(filePath);
+                    console.log(`🔄 𝖠𝗍𝗍𝖾𝗆𝗉𝗍𝗂𝗇𝗀 𝗋𝖾-𝖽𝗈𝗐𝗇𝗅𝗈𝖺𝖽 𝖿𝗈𝗋: ${emoji}`);
+                    const response = await axios({
+                        method: 'GET',
+                        url: emojiVoiceDB[emoji].url,
+                        responseType: 'arraybuffer',
+                        timeout: 45000
+                    });
+                    
+                    await fs.writeFile(filePath, response.data);
+                    await message.reply({
+                        body: emojiVoiceDB[emoji].caption,
+                        attachment: fs.createReadStream(filePath)
+                    });
+                } catch (retryError) {
+                    console.error(`❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗋𝖾-𝖽𝗈𝗐𝗇𝗅𝗈𝖺𝖽 𝖿𝗈𝗋 ${emoji}:`, retryError.message);
+                }
+            }
+            
+        } catch (error) {
+            console.error('💥 𝖤𝗆𝗈𝗃𝗂 𝖵𝗈𝗂𝖼𝖾 𝖤𝗋𝗋𝗈𝗋:', error);
+            // Don't send error message to avoid spam
+        }
+    }
+};
