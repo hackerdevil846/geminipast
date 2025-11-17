@@ -5,7 +5,7 @@ const path = require("path");
 const voiceDB = {
     "call": {
         url: "https://files.catbox.moe/1vmih4.mp3",
-        triggers: ["bby call dai", "xan call kori", "call me", "call kor", "কল দাও", "কল কর", "বেবি কল দেই", "জান কল করি"]
+        triggers: ["bby call dai", "call kori", "call me", "call dai", "কল দাও", "কল কর", "বেবি কল দেই", "জান কল করি"]
     },
     "pot": {
         url: "https://files.catbox.moe/u1ykfq.mp3", 
