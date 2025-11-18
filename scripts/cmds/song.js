@@ -39,7 +39,7 @@ module.exports = {
         const searchTerm = wantVideo ? query.replace(/ video$/i, "").trim() : query.trim();
         const format = wantVideo ? "video" : "audio";
 
-        const processingMsg = await message.reply(🔍 Searching for "${searchTerm}"...);
+        const processingMsg = await message.reply(`🔍 Searching for "${searchTerm}"...`);
 
         try {
             // Search using yt-search
@@ -55,32 +55,36 @@ module.exports = {
             const title = first.title;
             const videoUrl = first.url;
             const author = first.author.name;
+            const duration = first.timestamp || "Unknown";
 
             await message.unsendMessage(processingMsg.messageID);
-            const downloadMsg = await message.reply(✅ Found: ${title}\n📥 Downloading ${format}...);
+            const downloadMsg = await message.reply(`✅ Found: ${title}\n📥 Downloading ${format}...`);
 
             // Fetch download URL using API
             let fetchRes;
             try {
                 const apiEndpoint = wantVideo ? 'ytmp4' : 'ytmp3';
-                let apiUrl = https://anabot.my.id/api/download/${apiEndpoint}?url=${encodeURIComponent(videoUrl)}&apikey=freeApikey;
+                let apiUrl = `https://anabot.my.id/api/download/${apiEndpoint}?url=${encodeURIComponent(videoUrl)}&apikey=freeApikey`;
                 if (wantVideo) {
                     apiUrl += '&quality=360';
                 }
+                
                 fetchRes = await axios.get(apiUrl, {
                     headers: {
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                     },
                     timeout: 60000
                 });
             } catch (fetchError) {
+                console.error("API Fetch Error:", fetchError);
                 await message.unsendMessage(downloadMsg.messageID);
-                return message.reply(❌ Failed to fetch download link.\n\nThe API might be slow or unavailable. Please try again later.);
+                return message.reply(`❌ Failed to fetch download link.\n\nError: ${fetchError.message}`);
             }
 
-            if (!fetchRes.data.success || !fetchRes.data.data.result.urls) {
+            if (!fetchRes.data || !fetchRes.data.success || !fetchRes.data.data || !fetchRes.data.data.result || !fetchRes.data.data.result.urls) {
                 await message.unsendMessage(downloadMsg.messageID);
-                return message.reply("❌ Failed to get download URL from API");
+                return message.reply("❌ Invalid API response. Failed to get download URL.");
             }
 
             const downloadUrl = fetchRes.data.data.result.urls;
@@ -90,11 +94,21 @@ module.exports = {
             try {
                 downloadRes = await axios.get(downloadUrl, {
                     responseType: 'arraybuffer',
-                    timeout: 180000
+                    timeout: 180000,
+                    headers: {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+                        'Accept': '*/*'
+                    }
                 });
             } catch (downloadError) {
                 await message.unsendMessage(downloadMsg.messageID);
-                return message.reply(❌ Download failed.\n\nPlease try again later.);
+                return message.reply(`❌ Download failed.\n\nError: ${downloadError.message}`);
+            }
+
+            // Check if file was downloaded successfully
+            if (!downloadRes.data || downloadRes.data.length === 0) {
+                await message.unsendMessage(downloadMsg.messageID);
+                return message.reply("❌ Downloaded file is empty or corrupted.");
             }
 
             const cacheDir = path.join(__dirname, "cache");
@@ -102,26 +116,43 @@ module.exports = {
 
             const timestamp = Date.now();
             const extension = wantVideo ? "mp4" : "mp3";
-            const filePath = path.join(cacheDir, ${timestamp}.${extension});
+            const filePath = path.join(cacheDir, `${timestamp}.${extension}`);
             
             await fs.writeFile(filePath, downloadRes.data);
+
+            // Check if file was written successfully
+            const stats = await fs.stat(filePath);
+            if (stats.size === 0) {
+                await message.unsendMessage(downloadMsg.messageID);
+                return message.reply("❌ File write failed. File is empty.");
+            }
 
             await message.unsendMessage(downloadMsg.messageID);
             
             // Send the file
             await message.reply({
-                body: 🎶 ${title}\n📺 ${author}\n🔗 ${videoUrl},
+                body: `🎶 Title: ${title}\n🎤 Artist: ${author}\n⏱️ Duration: ${duration}\n🔗 URL: ${videoUrl}\n📦 Format: ${wantVideo ? 'Video' : 'Audio'}`,
                 attachment: fs.createReadStream(filePath)
             });
 
             // Clean up file after 10 seconds
-            setTimeout(() => {
-                fs.unlink(filePath).catch(err => console.log("Cleanup error:", err));
+            setTimeout(async () => {
+                try {
+                    if (await fs.pathExists(filePath)) {
+                        await fs.unlink(filePath);
+                    }
+                } catch (cleanupError) {
+                    console.log("Cleanup error:", cleanupError);
+                }
             }, 10000);
 
         } catch (err) {
-            console.error("SONG CMD ERR:", err);
-            // Don't send error message to avoid spam
+            console.error("SONG CMD ERROR:", err);
+            try {
+                await message.reply("❌ An error occurred while processing your request. Please try again later.");
+            } catch (replyError) {
+                console.error("Failed to send error message:", replyError);
+            }
         }
     }
 };
