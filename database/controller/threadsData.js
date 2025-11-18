@@ -172,6 +172,7 @@ module.exports = async function (databaseType, threadModel, api, fakeGraphql) {
 		}
 	}
 
+	// FIXED FUNCTION: Added null checking for threadInfo
 	async function create_(threadID, threadInfo) {
 		const findInCreatingData = creatingThreadData.find(t => t.threadID == threadID);
 		if (findInCreatingData)
@@ -191,35 +192,82 @@ module.exports = async function (databaseType, threadModel, api, fakeGraphql) {
 						message: `The first argument (threadID) must be a number, not a ${typeof threadID}`
 					});
 				}
-				threadInfo = threadInfo || await api.getThreadInfo(threadID);
-				const { threadName, userInfo, adminIDs } = threadInfo;
-				const newAdminsIDs = adminIDs.reduce(function (_, b) {
-					_.push(b.id);
-					return _;
+				
+				// FIXED: Added null checking and fallback for threadInfo
+				threadInfo = threadInfo || await api.getThreadInfo(threadID).catch(() => null);
+				
+				// If threadInfo is still null, create default thread data
+				if (!threadInfo) {
+					console.log(`⚠️ Thread info is null for threadID: ${threadID}, creating default data...`);
+					const defaultThreadData = {
+						threadID,
+						threadName: `Group_${threadID}`,
+						threadThemeID: null,
+						emoji: "😊",
+						adminIDs: [],
+						imageSrc: null,
+						approvalMode: false,
+						members: [],
+						banned: {},
+						settings: {
+							sendWelcomeMessage: true,
+							sendLeaveMessage: true,
+							sendRankupMessage: false,
+							customCommand: true
+						},
+						data: {},
+						isGroup: true
+					};
+					
+					const threadData = await save(threadID, defaultThreadData, "create");
+					resolve_(_.cloneDeep(threadData));
+					return;
+				}
+
+				// FIXED: Safe destructuring with fallback values
+				const { 
+					threadName = `Group_${threadID}`, 
+					userInfo = [], 
+					adminIDs = [],
+					nicknames = {},
+					threadTheme = {},
+					emoji = "😊",
+					imageSrc = null,
+					approvalMode = false,
+					threadType = 2
+				} = threadInfo || {};
+
+				const newAdminsIDs = adminIDs.reduce(function (acc, admin) {
+					if (admin && admin.id) {
+						acc.push(admin.id);
+					}
+					return acc;
 				}, []);
 
 				const newMembers = userInfo.reduce(function (arr, user) {
-					const userID = user.id;
-					arr.push({
-						userID,
-						name: user.name,
-						gender: user.gender,
-						nickname: threadInfo.nicknames[userID] || null,
-						inGroup: true,
-						count: 0,
-						permissionConfigDashboard: false
-					});
+					if (user && user.id) {
+						const userID = user.id;
+						arr.push({
+							userID,
+							name: user.name || `User_${userID}`,
+							gender: user.gender || 0,
+							nickname: nicknames[userID] || null,
+							inGroup: true,
+							count: 0,
+							permissionConfigDashboard: false
+						});
+					}
 					return arr;
 				}, []);
 
 				let threadData = {
 					threadID,
 					threadName,
-					threadThemeID: threadInfo.threadTheme?.id || null,
-					emoji: threadInfo.emoji,
+					threadThemeID: threadTheme?.id || null,
+					emoji,
 					adminIDs: newAdminsIDs,
-					imageSrc: threadInfo.imageSrc,
-					approvalMode: threadInfo.approvalMode,
+					imageSrc,
+					approvalMode,
 					members: newMembers,
 					banned: {},
 					settings: {
@@ -229,8 +277,9 @@ module.exports = async function (databaseType, threadModel, api, fakeGraphql) {
 						customCommand: true
 					},
 					data: {},
-					isGroup: threadInfo.threadType == 2
+					isGroup: threadType == 2
 				};
+				
 				threadData = await save(threadID, threadData, "create");
 				resolve_(_.cloneDeep(threadData));
 			}
@@ -267,42 +316,56 @@ module.exports = async function (databaseType, threadModel, api, fakeGraphql) {
 						}));
 					}
 					const threadInfo = await get_(threadID);
-					newThreadInfo = newThreadInfo || await api.getThreadInfo(threadID);
-					const { userInfo, adminIDs, nicknames } = newThreadInfo;
-					let oldMembers = threadInfo.members;
+					newThreadInfo = newThreadInfo || await api.getThreadInfo(threadID).catch(() => null);
+					
+					// FIXED: Added null checking for newThreadInfo
+					if (!newThreadInfo) {
+						console.log(`⚠️ Cannot refresh info for threadID: ${threadID}, thread info is null`);
+						return resolve(_.cloneDeep(threadInfo));
+					}
+					
+					const { userInfo = [], adminIDs = [], nicknames = {} } = newThreadInfo;
+					let oldMembers = threadInfo.members || [];
 					const newMembers = [];
+					
 					for (const user of userInfo) {
-						const userID = user.id;
-						const indexUser = _.findIndex(oldMembers, { userID });
-						const oldDataUser = oldMembers[indexUser] || {};
-						const data = {
-							userID,
-							...oldDataUser,
-							name: user.name,
-							gender: user.gender,
-							nickname: nicknames[userID] || null,
-							inGroup: true,
-							count: oldDataUser.count || 0,
-							permissionConfigDashboard: oldDataUser.permissionConfigDashboard || false
-						};
-						indexUser != -1 ? oldMembers[indexUser] = data : oldMembers.push(data);
-						newMembers.push(oldMembers.splice(indexUser != -1 ? indexUser : oldMembers.length - 1, 1)[0]);
+						if (user && user.id) {
+							const userID = user.id;
+							const indexUser = _.findIndex(oldMembers, { userID });
+							const oldDataUser = oldMembers[indexUser] || {};
+							const data = {
+								userID,
+								...oldDataUser,
+								name: user.name || oldDataUser.name || `User_${userID}`,
+								gender: user.gender || oldDataUser.gender || 0,
+								nickname: nicknames[userID] || oldDataUser.nickname || null,
+								inGroup: true,
+								count: oldDataUser.count || 0,
+								permissionConfigDashboard: oldDataUser.permissionConfigDashboard || false
+							};
+							indexUser != -1 ? oldMembers[indexUser] = data : oldMembers.push(data);
+							newMembers.push(oldMembers.splice(indexUser != -1 ? indexUser : oldMembers.length - 1, 1)[0]);
+						}
 					}
 					oldMembers = oldMembers.map(user => {
 						user.inGroup = false;
 						return user;
 					});
-					const newAdminsIDs = adminIDs.reduce(function (acc, cur) {
-						acc.push(cur.id);
+					
+					const newAdminsIDs = adminIDs.reduce(function (acc, admin) {
+						if (admin && admin.id) {
+							acc.push(admin.id);
+						}
 						return acc;
 					}, []);
+					
 					let threadData = {
 						...threadInfo,
-						threadName: newThreadInfo.threadName,
-						threadThemeID: newThreadInfo.threadTheme?.id || null,
-						emoji: newThreadInfo.emoji,
+						threadName: newThreadInfo.threadName || threadInfo.threadName,
+						threadThemeID: newThreadInfo.threadTheme?.id || threadInfo.threadThemeID,
+						emoji: newThreadInfo.emoji || threadInfo.emoji,
 						adminIDs: newAdminsIDs,
-						imageSrc: newThreadInfo.imageSrc,
+						imageSrc: newThreadInfo.imageSrc || threadInfo.imageSrc,
 						members: [
 							...oldMembers,
 							...newMembers
