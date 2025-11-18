@@ -23,7 +23,7 @@ function toBold(text) {
 
 module.exports.config = {
   name: "cs",
-  aliases: ["cmdstore", "commandstore", "sakurastore"],
+  aliases: [],
   author: "Saimx69x",
   version: "2.0",
   role: 0,
