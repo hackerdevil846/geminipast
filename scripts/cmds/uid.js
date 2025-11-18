@@ -6,67 +6,67 @@ module.exports = {
 		name: "uid",
 		aliases: [],
 		version: "2.0.0",
-		author: "Asif Mahmud",
+		author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
 		countDown: 5,
 		role: 0,
 		category: "info",
 		shortDescription: {
-			en: "🆔 Get user ID information"
+			en: "🆔 𝐆𝐞𝐭 𝐮𝐬𝐞𝐫 𝐈𝐃 𝐢𝐧𝐟𝐨𝐫𝐦𝐚𝐭𝐢𝐨𝐧"
 		},
 		longDescription: {
-			en: "Get Facebook user IDs from multiple sources: self, mentions, message replies, or profile links"
+			en: "𝐆𝐞𝐭 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 𝐮𝐬𝐞𝐫 𝐈𝐃𝐬 𝐟𝐫𝐨𝐦 𝐦𝐮𝐥𝐭𝐢𝐩𝐥𝐞 𝐬𝐨𝐮𝐫𝐜𝐞𝐬: 𝐬𝐞𝐥𝐟, 𝐦𝐞𝐧𝐭𝐢𝐨𝐧𝐬, 𝐦𝐞𝐬𝐬𝐚𝐠𝐞 𝐫𝐞𝐩𝐥𝐢𝐞𝐬, 𝐨𝐫 𝐩𝐫𝐨𝐟𝐢𝐥𝐞 𝐥𝐢𝐧𝐤𝐬"
 		},
 		guide: {
-			en: "   {p}uid - View your own user ID\n   {p}uid @mention - View ID of mentioned users\n   {p}uid <profile_url> - Get ID from Facebook profile link\n   Reply to a message with {p}uid - Get sender's ID"
+			en: "   {p}uid - 𝐕𝐢𝐞𝐰 𝐲𝐨𝐮𝐫 𝐨𝐰𝐧 𝐮𝐬𝐞𝐫 𝐈𝐃\n   {p}uid @mention - 𝐕𝐢𝐞𝐰 𝐈𝐃 𝐨𝐟 𝐦𝐞𝐧𝐭𝐢𝐨𝐧𝐞𝐝 𝐮𝐬𝐞𝐫𝐬\n   {p}uid <profile_url> - 𝐆𝐞𝐭 𝐈𝐃 𝐟𝐫𝐨𝐦 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 𝐩𝐫𝐨𝐟𝐢𝐥𝐞 𝐥𝐢𝐧𝐤\n   𝐑𝐞𝐩𝐥𝐲 𝐭𝐨 𝐚 𝐦𝐞𝐬𝐬𝐚𝐠𝐞 𝐰𝐢𝐭𝐡 {p}uid - 𝐆𝐞𝐭 𝐬𝐞𝐧𝐝𝐞𝐫'𝐬 𝐈𝐃"
 		}
 	},
 
 	langs: {
 		en: {
-			syntaxError: "❌ Please tag users, provide profile links, or leave empty to see your own ID",
-			urlError: "❌ Failed to get UID from: %1\nError: %2",
-			noValidURLs: "❌ No valid profile links provided",
-			yourUID: "👤 Your User ID: %1",
-			multipleResults: "📋 User ID Results:",
-			singleResult: "👤 User ID: %1"
+			syntaxError: "❌ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐭𝐚𝐠 𝐮𝐬𝐞𝐫𝐬, 𝐩𝐫𝐨𝐯𝐢𝐝𝐞 𝐩𝐫𝐨𝐟𝐢𝐥𝐞 𝐥𝐢𝐧𝐤𝐬, 𝐨𝐫 𝐥𝐞𝐚𝐯𝐞 𝐞𝐦𝐩𝐭𝐲 𝐭𝐨 𝐬𝐞𝐞 𝐲𝐨𝐮𝐫 𝐨𝐰𝐧 𝐈𝐃",
+			urlError: "❌ 𝐅𝐚𝐢𝐥𝐞𝐝 𝐭𝐨 𝐠𝐞𝐭 𝐔𝐈𝐃 𝐟𝐫𝐨𝐦: %1\n𝐄𝐫𝐫𝐨𝐫: %2",
+			noValidURLs: "❌ 𝐍𝐨 𝐯𝐚𝐥𝐢𝐝 𝐩𝐫𝐨𝐟𝐢𝐥𝐞 𝐥𝐢𝐧𝐤𝐬 𝐩𝐫𝐨𝐯𝐢𝐝𝐞𝐝",
+			yourUID: "👤 𝐘𝐨𝐮𝐫 𝐔𝐬𝐞𝐫 𝐈𝐃: %1",
+			multipleResults: "📋 𝐔𝐬𝐞𝐫 𝐈𝐃 𝐑𝐞𝐬𝐮𝐥𝐭𝐬:",
+			singleResult: "👤 𝐔𝐬𝐞𝐫 𝐈𝐃: %1"
 		}
 	},
 
 	onStart: async function ({ message, event, args, getLang }) {
 		try {
-			// Case 1: Message reply - get replier's ID
+			// 𝐂𝐚𝐬𝐞 𝟏: 𝐌𝐞𝐬𝐬𝐚𝐠𝐞 𝐫𝐞𝐩𝐥𝐲 - 𝐠𝐞𝐭 𝐫𝐞𝐩𝐥𝐢𝐞𝐫'𝐬 𝐈𝐃
 			if (event.messageReply) {
 				const replyUID = event.messageReply.senderID;
 				return message.reply(getLang("singleResult", replyUID));
 			}
 
-			// Case 2: No arguments - get own ID
+			// 𝐂𝐚𝐬𝐞 𝟐: 𝐍𝐨 𝐚𝐫𝐠𝐮𝐦𝐞𝐧𝐭𝐬 - 𝐠𝐞𝐭 𝐨𝐰𝐧 𝐈𝐃
 			if (!args[0] || args[0].trim() === "") {
 				return message.reply(getLang("yourUID", event.senderID));
 			}
 
-			// Case 3: Profile URLs provided
+			// 𝐂𝐚𝐬𝐞 𝟑: 𝐏𝐫𝐨𝐟𝐢𝐥𝐞 𝐔𝐑𝐋𝐬 𝐩𝐫𝐨𝐯𝐢𝐝𝐞𝐝
 			const urlArgs = args.filter(arg => regExCheckURL.test(arg.trim()));
 			if (urlArgs.length > 0) {
 				return await this.handleURLs(urlArgs, message, getLang);
 			}
 
-			// Case 4: Mentions provided
+			// 𝐂𝐚𝐬𝐞 𝟒: 𝐌𝐞𝐧𝐭𝐢𝐨𝐧𝐬 𝐩𝐫𝐨𝐯𝐢𝐝𝐞𝐝
 			const { mentions } = event;
 			if (Object.keys(mentions).length > 0) {
 				return await this.handleMentions(mentions, message);
 			}
 
-			// Case 5: Invalid input
+			// 𝐂𝐚𝐬𝐞 𝟓: 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐢𝐧𝐩𝐮𝐭
 			return message.reply(getLang("syntaxError"));
 
 		} catch (error) {
-			console.error("UID Command Error:", error);
-			return message.reply("❌ An error occurred while processing the command. Please try again.");
+			console.error("❌ 𝐔𝐈𝐃 𝐂𝐨𝐦𝐦𝐚𝐧𝐝 𝐄𝐫𝐫𝐨𝐫:", error);
+			return message.reply("❌ 𝐀𝐧 𝐞𝐫𝐫𝐨𝐫 𝐨𝐜𝐜𝐮𝐫𝐫𝐞𝐝 𝐰𝐡𝐢𝐥𝐞 𝐩𝐫𝐨𝐜𝐞𝐬𝐬𝐢𝐧𝐠 𝐭𝐡𝐞 𝐜𝐨𝐦𝐦𝐚𝐧𝐝. 𝐏𝐥𝐞𝐚𝐬𝐞 𝐭𝐫𝐲 𝐚𝐠𝐚𝐢𝐧.");
 		}
 	},
 
-	// Handle profile URLs
+	// 𝐇𝐚𝐧𝐝𝐥𝐞 𝐩𝐫𝐨𝐟𝐢𝐥𝐞 𝐔𝐑𝐋𝐬
 	handleURLs: async function (urls, message, getLang) {
 		try {
 			let results = [];
@@ -90,18 +90,18 @@ module.exports = {
 			if (urls.length > 1 || errorCount > 0) {
 				responseMessage = getLang("multipleResults") + "\n\n" + results.join("\n");
 			} else {
-				responseMessage = results[0].replace(/^🔗\s.*?→\s/, "👤 User ID: ");
+				responseMessage = results[0].replace(/^🔗\s.*?→\s/, "👤 𝐔𝐬𝐞𝐫 𝐈𝐃: ");
 			}
 
 			await message.reply(responseMessage);
 
 		} catch (error) {
-			console.error("URL handling error:", error);
-			throw new Error("Failed to process profile links");
+			console.error("❌ 𝐔𝐑𝐋 𝐡𝐚𝐧𝐝𝐥𝐢𝐧𝐠 𝐞𝐫𝐫𝐨𝐫:", error);
+			throw new Error("𝐅𝐚𝐢𝐥𝐞𝐝 𝐭𝐨 𝐩𝐫𝐨𝐜𝐞𝐬𝐬 𝐩𝐫𝐨𝐟𝐢𝐥𝐞 𝐥𝐢𝐧𝐤𝐬");
 		}
 	},
 
-	// Handle user mentions
+	// 𝐇𝐚𝐧𝐝𝐥𝐞 𝐮𝐬𝐞𝐫 𝐦𝐞𝐧𝐭𝐢𝐨𝐧𝐬
 	handleMentions: async function (mentions, message) {
 		try {
 			let results = [];
@@ -113,16 +113,16 @@ module.exports = {
 
 			let responseMessage = "";
 			if (results.length > 1) {
-				responseMessage = "📋 User ID Results:\n\n" + results.join("\n");
+				responseMessage = "📋 𝐔𝐬𝐞𝐫 𝐈𝐃 𝐑𝐞𝐬𝐮𝐥𝐭𝐬:\n\n" + results.join("\n");
 			} else {
-				responseMessage = results[0].replace(/^👤\s.*?→\s/, "👤 User ID: ");
+				responseMessage = results[0].replace(/^👤\s.*?→\s/, "👤 𝐔𝐬𝐞𝐫 𝐈𝐃: ");
 			}
 
 			await message.reply(responseMessage);
 
 		} catch (error) {
-			console.error("Mentions handling error:", error);
-			throw new Error("Failed to process user mentions");
+			console.error("❌ 𝐌𝐞𝐧𝐭𝐢𝐨𝐧𝐬 𝐡𝐚𝐧𝐝𝐥𝐢𝐧𝐠 𝐞𝐫𝐫𝐨𝐫:", error);
+			throw new Error("𝐅𝐚𝐢𝐥𝐞𝐝 𝐭𝐨 𝐩𝐫𝐨𝐜𝐞𝐬𝐬 𝐮𝐬𝐞𝐫 𝐦𝐞𝐧𝐭𝐢𝐨𝐧𝐬");
 		}
 	}
 };
