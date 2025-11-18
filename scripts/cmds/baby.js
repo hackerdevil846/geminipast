@@ -7,7 +7,7 @@ const baseApiUrl = async () => {
 module.exports = {
     config: {
         name: "bby",
-        aliases: ["baby", "bby", "babe", "jan", "bow", "bbu", "pookie", "sona", "bot", "zara", "hania", "xan", "জান", "বট", "বেবি"],
+        aliases: ["baby", "bbe", "babe", "jan", "bow", "bbu", "pookie", "sona", "bot", "zara", "ridita", "xan", "জান", "বট", "বেবি"],
         version: "6.9.0",
         author: "Asif Mahmud",
         countDown: 0,
@@ -158,7 +158,7 @@ module.exports = {
             if (!body) return;
             
             // Trigger words list - ALL trigger words combined
-            const triggerWords = ["baby", "bby", "babe", "jan", "bow", "bbu", "pookie", "sona", "bot", "zara", "hania", "xan", "জান", "বট", "বেবি", "babu", "janu"];
+            const triggerWords = ["baby", "bbe", "babe", "jan", "bow", "bbu", "pookie", "sona", "bot", "zara", "ridita", "xan", "জান", "বট", "বেবি", "babu", "janu"];
             
             // Check if any trigger word exists ANYWHERE in the message
             let foundTrigger = null;
