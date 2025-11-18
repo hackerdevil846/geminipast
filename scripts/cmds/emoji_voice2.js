@@ -148,204 +148,159 @@ module.exports = {
 
     onLoad: async function() {
         try {
-            // Dependency check
-            let dependenciesAvailable = true;
-            try {
-                require("axios");
-                require("fs-extra");
-                require("path");
-            } catch (e) {
-                dependenciesAvailable = false;
-            }
-
-            if (!dependenciesAvailable) {
-                console.error("❌ Missing dependencies");
-                return;
-            }
-
-            const cacheDir = path.join(__dirname, 'cache', 'emoji_voice2');
-            try {
-                await fs.ensureDir(cacheDir);
-            } catch (dirError) {
-                console.error("❌ Failed to create cache directory:", dirError);
-                return;
-            }
-            
             console.log("🔄 Pre-caching emoji voice files...");
             
-            // Download files sequentially to avoid overwhelming the network
+            const cacheDir = path.join(__dirname, 'cache', 'emoji_voice2');
+            await fs.ensureDir(cacheDir);
+            
+            // Download files sequentially with better error handling
             for (const emoji of Object.keys(emojiVoiceDB)) {
                 const filePath = path.join(cacheDir, `${emoji}.mp3`);
-                if (!await fs.pathExists(filePath)) {
-                    try {
-                        console.log(`📥 Downloading: ${emoji}`);
-                        const response = await axios({
-                            method: 'GET',
-                            url: emojiVoiceDB[emoji].url,
-                            responseType: 'arraybuffer',
-                            timeout: 60000,
-                            headers: {
-                                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-                            }
-                        });
-                        
-                        // Verify file has content
-                        if (response.data && response.data.length > 1000) {
-                            await fs.writeFile(filePath, response.data);
-                            console.log(`✅ Successfully cached: ${emoji} (${(response.data.length / 1024 / 1024).toFixed(2)}MB)`);
-                        } else {
-                            throw new Error("Invalid file size");
+                
+                // Skip if file already exists and has content
+                try {
+                    if (await fs.pathExists(filePath)) {
+                        const stats = await fs.stat(filePath);
+                        if (stats.size > 1000) {
+                            console.log(`✅ Already cached: ${emoji}`);
+                            continue;
                         }
-                    } catch (error) {
-                        console.error(`❌ Failed to cache ${emoji}:`, error.message);
                     }
-                    
-                    // Add delay between downloads to avoid rate limiting
-                    await new Promise(resolve => setTimeout(resolve, 2000));
-                } else {
-                    console.log(`✅ Already cached: ${emoji}`);
+                } catch (e) {
+                    // File doesn't exist or is corrupted, continue to download
                 }
+
+                try {
+                    console.log(`📥 Downloading: ${emoji}`);
+                    const response = await axios({
+                        method: 'GET',
+                        url: emojiVoiceDB[emoji].url,
+                        responseType: 'arraybuffer',
+                        timeout: 30000,
+                        headers: {
+                            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+                        }
+                    });
+                    
+                    if (response.data && response.data.length > 1000) {
+                        await fs.writeFile(filePath, response.data);
+                        console.log(`✅ Successfully cached: ${emoji} (${(response.data.length / 1024 / 1024).toFixed(2)}MB)`);
+                    } else {
+                        console.log(`❌ Small file size for ${emoji}: ${response.data.length} bytes`);
+                        continue;
+                    }
+                } catch (error) {
+                    console.log(`❌ Failed to cache ${emoji}: ${error.message}`);
+                    // Continue with next emoji instead of stopping
+                }
+                
+                // Add delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
             
             console.log("✅ Pre-caching completed");
         } catch (error) {
-            console.error("💥 OnLoad Error:", error);
+            console.log("💥 OnLoad Error:", error.message);
         }
     },
 
     onStart: async function({ message, event }) {
         try {
-            // Dependency check
-            let dependenciesAvailable = true;
-            try {
-                require("axios");
-                require("fs-extra");
-                require("path");
-            } catch (e) {
-                dependenciesAvailable = false;
-            }
-
-            if (!dependenciesAvailable) {
-                return message.reply("❌ Missing dependencies. Please install axios, fs-extra, and path.");
-            }
-
+            const emojiList = Object.keys(emojiVoiceDB).join(' ');
             await message.reply(
-                `🎵 Send one of these emojis to get voice response:\n${Object.keys(emojiVoiceDB).join(' ')}`
+                `🎵 Send one of these emojis to get voice response:\n\n${emojiList}\n\n` +
+                `Example: send "🐸" or "😂" to hear voice messages`
             );
         } catch (error) {
-            console.error("💥 OnStart Error:", error);
+            console.log("💥 OnStart Error:", error.message);
         }
     },
 
     onChat: async function({ event, message }) {
         try {
-            // Dependency check
-            let dependenciesAvailable = true;
-            try {
-                require("axios");
-                require("fs-extra");
-                require("path");
-            } catch (e) {
-                dependenciesAvailable = false;
-            }
-
-            if (!dependenciesAvailable) {
+            const { body } = event;
+            
+            if (!body || typeof body !== 'string') return;
+            
+            const emoji = body.trim();
+            
+            // Check if it's a single emoji and supported
+            if (emoji.length > 2 || !emojiVoiceDB[emoji]) {
                 return;
             }
 
-            const { body } = event;
-            
-            if (!body || body.length > 2) return;
-            
-            const emoji = body.trim();
-            if (!emojiVoiceDB[emoji]) return;
-            
             console.log(`🎵 Processing emoji: ${emoji}`);
 
             const cacheDir = path.join(__dirname, 'cache', 'emoji_voice2');
             const filePath = path.join(cacheDir, `${emoji}.mp3`);
             
+            await fs.ensureDir(cacheDir);
+
+            let shouldDownload = false;
+            
             try {
-                await fs.ensureDir(cacheDir);
-            } catch (dirError) {
-                console.error("❌ Failed to create cache directory:", dirError);
-                return;
+                if (!(await fs.pathExists(filePath))) {
+                    shouldDownload = true;
+                } else {
+                    const stats = await fs.stat(filePath);
+                    if (stats.size === 0) {
+                        shouldDownload = true;
+                    }
+                }
+            } catch (e) {
+                shouldDownload = true;
             }
 
-            let fileExists = false;
-            try {
-                fileExists = await fs.pathExists(filePath);
-            } catch (pathError) {
-                console.error("❌ Error checking file path:", pathError);
-            }
-
-            if (!fileExists) {
+            if (shouldDownload) {
                 try {
                     console.log(`📥 Downloading voice file for: ${emoji}`);
                     const response = await axios({
                         method: 'GET',
                         url: emojiVoiceDB[emoji].url,
                         responseType: 'arraybuffer',
-                        timeout: 45000,
+                        timeout: 30000,
                         headers: {
                             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
                         }
                     });
                     
-                    // Verify file has content
                     if (response.data && response.data.length > 1000) {
                         await fs.writeFile(filePath, response.data);
                         console.log(`✅ Successfully downloaded: ${emoji}`);
                     } else {
-                        throw new Error("Invalid file size");
+                        console.log(`❌ Small file for ${emoji}, skipping`);
+                        return;
                     }
                 } catch (downloadError) {
-                    console.error(`❌ Failed to download ${emoji}:`, downloadError.message);
+                    console.log(`❌ Failed to download ${emoji}: ${downloadError.message}`);
                     return;
                 }
             }
 
-            // Verify file is readable before sending
+            // Send the voice file
             try {
-                await fs.access(filePath, fs.constants.R_OK);
-                const stats = await fs.stat(filePath);
-                if (stats.size === 0) {
-                    throw new Error("File is empty");
-                }
-                
                 await message.reply({
-                    body: emojiVoiceDB[emoji].caption,
+                    body: emojiVoiceDB[emoji].caption || emoji,
                     attachment: fs.createReadStream(filePath)
                 });
                 
                 console.log(`✅ Successfully sent voice for: ${emoji}`);
                 
-            } catch (fileError) {
-                console.error(`❌ Error reading file ${emoji}:`, fileError.message);
+            } catch (sendError) {
+                console.log(`❌ Error sending ${emoji}: ${sendError.message}`);
                 
-                // Try to re-download the file
+                // Try to delete corrupted file and re-download
                 try {
-                    await fs.unlink(filePath);
-                    console.log(`🔄 Attempting re-download for: ${emoji}`);
-                    const response = await axios({
-                        method: 'GET',
-                        url: emojiVoiceDB[emoji].url,
-                        responseType: 'arraybuffer',
-                        timeout: 45000
-                    });
-                    
-                    await fs.writeFile(filePath, response.data);
-                    await message.reply({
-                        body: emojiVoiceDB[emoji].caption,
-                        attachment: fs.createReadStream(filePath)
-                    });
-                } catch (retryError) {
-                    console.error(`❌ Failed re-download for ${emoji}:`, retryError.message);
+                    if (await fs.pathExists(filePath)) {
+                        await fs.unlink(filePath);
+                    }
+                } catch (deleteError) {
+                    console.log(`❌ Failed to delete corrupted file: ${deleteError.message}`);
                 }
             }
             
         } catch (error) {
-            console.error('💥 Emoji Voice Error:', error);
+            console.log('💥 Emoji Voice Error:', error.message);
         }
     }
 };
