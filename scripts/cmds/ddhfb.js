@@ -20,7 +20,7 @@ const supportedDomains = [
 
 module.exports = {
   config: {
-    name: "autodl",
+    name: "ddhfb",
     version: "2.0",
     author: "Saimx69x",
     role: 0,
