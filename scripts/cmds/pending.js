@@ -13,7 +13,7 @@ module.exports = {
       vi: "",
       en: ""
     },
-    category: ""
+    category: "group"
   },
 
   langs: {
