@@ -5,7 +5,7 @@ const { createCanvas, loadImage } = require("canvas");
 module.exports = {
   config: {
     name: "wantedposter",
-    aliases: ["wantedcmd", "posterwanted"],
+    aliases: [],
     version: "1.0.1",
     author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
     role: 0,
@@ -27,20 +27,23 @@ module.exports = {
     }
   },
 
-  onStart: async function ({ api, event, args, message, usersData }) {
+  onStart: async function ({ api, event, message, usersData }) {
     try {
-      const { senderID, threadID, messageID } = event;
+      const { senderID, messageID } = event;
       let targetID = senderID;
 
       // Determine target user
       if (event.type === "message_reply") {
         targetID = event.messageReply.senderID;
-      } else if (Object.keys(event.mentions).length > 0) {
+      } else if (event.mentions && Object.keys(event.mentions).length > 0) {
         targetID = Object.keys(event.mentions)[0];
       }
 
       const pathImg = __dirname + "/cache/wanted_poster.png";
       const pathAva = __dirname + "/cache/avatar.png";
+
+      // Ensure cache directory exists
+      await fs.ensureDir(__dirname + "/cache");
 
       // Download user avatar
       const Avatar = (
@@ -50,16 +53,17 @@ module.exports = {
         )
       ).data;
       
-      fs.writeFileSync(pathAva, Buffer.from(Avatar, "utf-8"));
+      fs.writeFileSync(pathAva, Buffer.from(Avatar));
 
       // Download wanted template
       const getWanted = (
-        await axios.get(`https://api.popcat.xyz/wanted?image=https://1.bp.blogspot.com/-nj8ADXnM8Ec/X0Ht4-TFU9I/AAAAAAAAw8k/lcoTu5I8alQra8zvzHIaRpA5pQ3La3i7ACLcBGAsYHQ/s1600/Hinh-Nen-Den%2B%252818%2529.jpg`, {
-          responseType: "arraybuffer",
-        })
+        await axios.get(
+          `https://api.popcat.xyz/wanted?image=https://1.bp.blogspot.com/-nj8ADXnM8Ec/X0Ht4-TFU9I/AAAAAAAAw8k/lcoTu5I8alQra8zvzHIaRpA5pQ3La3i7ACLcBGAsYHQ/s1600/Hinh-Nen-Den%2B%252818%2529.jpg`,
+          { responseType: "arraybuffer" }
+        )
       ).data;
       
-      fs.writeFileSync(pathImg, Buffer.from(getWanted, "utf-8"));
+      fs.writeFileSync(pathImg, Buffer.from(getWanted));
 
       // Process images
       const baseImage = await loadImage(pathImg);
@@ -72,10 +76,10 @@ module.exports = {
       ctx.drawImage(baseAva, 144, 281, 448, 448);
 
       // Save final image
-      const imageBuffer = canvas.toBuffer();
+      const imageBuffer = canvas.toBuffer("image/png");
       fs.writeFileSync(pathImg, imageBuffer);
       
-      // Clean up temporary files
+      // Clean up temporary avatar
       fs.removeSync(pathAva);
 
       // Get target user name for message
