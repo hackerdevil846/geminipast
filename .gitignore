@@ -1,0 +1,55 @@
+# ----------------------------------------------------------------------
+# CRITICAL SECURITY: FACEBOOK SESSION AND CREDENTIALS
+# This file must NEVER be committed to a public repository.
+# ----------------------------------------------------------------------
+appstate.json
+account.txt
+.env
+.env.*
+config.local.json
+credentials.json
+# Sensitive data stored in the dashboard's database/ folder
+/database/*.db
+/database/*.sqlite
+/database/*.json
+# Specific database files used by the bot
+/sqlite.db
+/data.json
+/db.sqlite
+/db.json
+
+# ----------------------------------------------------------------------
+# NODE.JS AND DEPENDENCIES
+# ----------------------------------------------------------------------
+# Dependency directory
+/node_modules
+# Optional npm cache files
+.npm
+# npm package installation and error logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ----------------------------------------------------------------------
+# BUILD, COMPILED, AND TEMPORARY FILES
+# ----------------------------------------------------------------------
+/build
+/dist
+/tmp
+# Compiled JavaScript
+*.js.map
+# Runtime data
+*.pid
+*.seed
+*.pid.lock
+
+# ----------------------------------------------------------------------
+# OS AND IDE CONFIG FILES
+# ----------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+# VS Code configuration files
+.vscode/
+# IntelliJ/WebStorm IDE files
+.idea/
