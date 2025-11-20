@@ -1,169 +1,88 @@
-/**
- * GOAT BOT MESSENGER BOT (V2)
- * Main Entry Point: index.js
- * Original Author: NTKhang
- * Optimized/Enhanced: Asif Mahmud
- *
- * This production-ready script initializes the FCA, loads configuration from
- * config.json, and sets up the modular command and event handlers.
- * It is configured to use appstate.json for secure session login.
- */
-
-// --- CORE MODULES ---
-const fs = require('fs-extra');
-const path = require('path');
-const chalk = require('chalk');
-const figlet = require('figlet');
-const moment = require('moment-timezone');
-const npmlog = require('npmlog');
-const login = require('facebook-chat-api'); // Use your specific FCA library if different
-const GoatBot = {};
+// index.js (Standard FCA Bot Entry Point)
+const login = require("facebook-chat-api");
+const fs = require("fs-extra");
+const path = require("path");
+const config = require("./config.json");
+const moment = require("moment-timezone");
+const chalk = require("chalk");
 
 // --- Configuration Setup ---
-GoatBot.dir = path.join(process.cwd());
-GoatBot.config = require(path.join(GoatBot.dir, 'config.json'));
-GoatBot.dirConfigs = path.join(GoatBot.dir, 'configs');
-GoatBot.dirModules = path.join(GoatBot.dir, 'scripts');
-GoatBot.dirCommands = path.join(GoatBot.dirModules, 'cmds');
-GoatBot.dirEvents = path.join(GoatBot.dirModules, 'events');
-GoatBot.dirLangs = path.join(GoatBot.dir, 'languages');
-GoatBot.configCommands = {};
-GoatBot.commands = new Map();
-GoatBot.eventCommands = new Map();
-GoatBot.onReply = new Map();
-GoatBot.onReaction = new Map();
-GoatBot.languages = {};
+const adminBot = config.adminBot || [];
+const prefix = config.prefix || "/";
+const language = config.language || "en";
+const optionsFca = config.optionsFca || {};
+const timeZone = config.timeZone || "Asia/Dhaka";
+global.client = {}; // Global object for API and data
+global.config = config;
 
-global.GoatBot = GoatBot;
+// Function to log the bot's status
+function logStatus(status) {
+    const time = moment().tz(timeZone).format("HH:mm:ss DD/MM/YYYY");
+    console.log(chalk.yellow(`[${time}]`), status);
+}
 
-// --- UTILITY FUNCTIONS ---
-
-/**
- * Loads the language strings for the bot's configured language.
- */
-function loadLanguage() {
-    const langCode = GoatBot.config.language.toLowerCase();
-    const langPath = path.join(GoatBot.dirLangs, `${langCode}.json`);
-
+// --- FCA Login Function ---
+function startBot() {
+    let appstate;
     try {
-        if (fs.existsSync(langPath)) {
-            GoatBot.languages.main = require(langPath);
-            npmlog.info('LANGUAGE', `Loaded main language: ${langCode.toUpperCase()}`);
-        } else {
-            npmlog.error('LANGUAGE', `Language file not found for: ${langCode.toUpperCase()}. Using default (English).`);
-            GoatBot.languages.main = require(path.join(GoatBot.dirLangs, 'en.json'));
-            GoatBot.config.language = 'en';
-        }
-    } catch (error) {
-        npmlog.error('LANGUAGE_LOAD', error.message);
-        process.exit(1);
-    }
-}
-
-/**
- * Loads all command and event files from their respective directories.
- */
-function loadScripts(type, dir) {
-    let count = 0;
-    const files = fs.readdirSync(dir).filter(file => file.endsWith('.js'));
-    const map = type === 'commands' ? GoatBot.commands : GoatBot.eventCommands;
-
-    for (const file of files) {
-        try {
-            delete require.cache[require.resolve(path.join(dir, file))];
-            const script = require(path.join(dir, file));
-
-            if (!script.config || !script.config.name) {
-                npmlog.warn(type.toUpperCase(), `Script '${file}' missing config or name.`);
-                continue;
-            }
-
-            const commandName = script.config.name.toLowerCase();
-
-            if (map.has(commandName)) {
-                npmlog.warn(type.toUpperCase(), `Duplicate ${type} name found: ${commandName}. Skipping '${file}'.`);
-                continue;
-            }
-
-            map.set(commandName, script);
-            count++;
-
-        } catch (error) {
-            npmlog.error(type.toUpperCase(), `Failed to load '${file}': ${error.message}`);
-        }
-    }
-    npmlog.info(type.toUpperCase(), `Loaded ${count} ${type}.`);
-}
-
-/**
- * Main function to start the bot process.
- */
-async function startBot() {
-    console.log(chalk.yellow(figlet.textSync('GOAT BOT V2', { horizontalLayout: 'full' })));
-    npmlog.info('CORE', `Running on Node ${process.version}`);
-    npmlog.info('CONFIG', `Timezone set to ${GoatBot.config.timeZone}`);
-    moment.tz.setDefault(GoatBot.config.timeZone);
-
-    loadLanguage();
-    loadScripts('commands', GoatBot.dirCommands);
-    loadScripts('events', GoatBot.dirEvents);
-
-    const fcaOptions = {
-        ...GoatBot.config.optionsFca,
-        forceLogin: true // Ensure appstate is used
-    };
-
-    // --- SECURE LOGIN VIA APPSTATE.JSON ---
-    const appStatePath = path.join(GoatBot.dir, 'appstate.json');
-
-    if (fs.existsSync(appStatePath)) {
-        npmlog.info('LOGIN', 'Attempting secure login using appstate.json...');
-        fcaOptions.appState = JSON.parse(fs.readFileSync(appStatePath, 'utf8'));
-    } else if (GoatBot.config.facebookAccount.email && GoatBot.config.facebookAccount.password) {
-        npmlog.warn('LOGIN', 'appstate.json not found. Falling back to username/password login from config.json (INSECURE).');
-        fcaOptions.email = GoatBot.config.facebookAccount.email;
-        fcaOptions.password = GoatBot.config.facebookAccount.password;
-        fcaOptions.secret = GoatBot.config.facebookAccount['2FASecret'];
-    } else {
-        npmlog.error('LOGIN', 'Critical Error: appstate.json not found and credentials are empty in config.json. Cannot log in.');
-        process.exit(1);
+        // PRODUCTION-READY: Read appstate.json for secure login
+        appstate = JSON.parse(fs.readFileSync(path.join(__dirname, "appstate.json"), "utf8"));
+        logStatus(chalk.green("Appstate found. Attempting session-based login..."));
+    } catch (e) {
+        logStatus(chalk.red("FATAL ERROR: appstate.json not found or invalid. Please generate it."));
+        return; // Stop if appstate.json is not present/valid
     }
 
-    login(fcaOptions, async (err, api) => {
+    login({ appState: appstate }, optionsFca, (err, api) => {
         if (err) {
-            if (err.error === 'login_to_fetch_data') {
-                npmlog.error('LOGIN_FAIL', 'Failed to log in. Check appstate.json integrity or credentials.');
+            logStatus(chalk.red("FCA Login Error. Checking for password attempt..."));
+            if (err.error == 'login-approval') {
+                logStatus(chalk.yellow('Login approval required. Check the console/log for further instructions.'));
+                // In a real production setup, you would need a mechanism to handle this.
             } else {
-                npmlog.error('LOGIN_FAIL', err.error || err);
+                logStatus(chalk.red(`FATAL LOGIN ERROR: ${err}`));
             }
-            return process.exit(1);
+            return;
         }
 
-        npmlog.info('LOGIN', `Successfully logged in as: ${api.getCurrentUserID()}`);
+        // Save the API and Admin IDs globally
+        global.client.api = api;
+        global.client.adminBot = adminBot;
 
-        // Save new appstate for session persistence
-        try {
-            fs.writeFileSync(appStatePath, JSON.stringify(api.getAppState(), null, 2));
-            npmlog.info('LOGIN', 'Updated appstate.json for next session.');
-        } catch (e) {
-            npmlog.error('APPSTATE_SAVE', 'Failed to save appstate.json:', e);
-        }
+        // --- Event Listener ---
+        api.listenMqtt(async (err, event) => {
+            if (err) return console.error(chalk.red("MQTT Listener Error:"), err);
 
-        // --- GLOBAL SETUP ---
-        global.GoatBot.api = api;
-        global.GoatBot.client = api; // Alias for compatibility
-        global.GoatBot.prefix = GoatBot.config.prefix;
+            // 1. Core Event Handling (Example: message event)
+            if (event.type === "message" || event.type === "message_reply") {
+                const message = event.body ? event.body.trim() : "";
 
-        // --- START LISTENER & HANDLERS ---
-        require('./handler/listen.js'); // Assuming core logic is separated into a handler folder
+                if (message.startsWith(prefix)) {
+                    // Extract command and arguments
+                    const command = message.split(" ")[0].slice(prefix.length).toLowerCase();
+                    const args = message.split(" ").slice(1);
+                    
+                    // TODO: Implement command loading and execution logic here
+                    // This is where scripts/cmds/ are loaded and run.
+                    
+                    logStatus(chalk.cyan(`[CMD] User ${event.senderID} ran: ${command}`));
 
-        // If dashboard is enabled, start the web server (code not provided here)
-        if (GoatBot.config.dashBoard.enable) {
-            npmlog.info('DASHBOARD', `Dashboard enabled on port ${GoatBot.config.dashBoard.port}`);
-            // require('./server/index.js'); // Hypothetical dashboard file
-        }
+                } else if (config.logEvents.message) {
+                    // Log non-command messages
+                    logStatus(chalk.white(`[MSG] ${event.senderID}: ${event.body}`));
+                }
+            }
+            
+            // 2. Event Handling for scripts/events/
+            // TODO: Implement event file loading and execution logic (e.g., message_reaction, event)
+
+        });
+
+        logStatus(chalk.green("Bot is RUNNING successfully!"));
+        logStatus(chalk.blue(`Prefix: ${prefix} | Timezone: ${timeZone}`));
+        api.setOptions({ listenEvents: true });
     });
 }
 
-// --- INITIALIZE BOT ---
+// Start the bot application
 startBot();
