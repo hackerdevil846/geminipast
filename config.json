@@ -1,0 +1,157 @@
+{
+  "facebookAccount": {
+    "email": null, 
+    "password": null,
+    "2FASecret": null,
+    "i_user": "",
+    "proxy": null,
+    "userAgent": "Mozilla/5.0 (Linux; Android 12; M2102J20SG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36",
+    "intervalGetNewCookie": 0,
+    "notes": "PRODUCTION READY: Credentials set to null. Bot relies on 'appstate.json' for session cookies. Set intervalGetNewCookie to 0 to prevent attempts to log in with empty credentials."
+  },
+  "antiInbox": true,
+  "checkApproval": true,
+  "language": "en",
+  "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
+  "nickNameBot": "𝑯𝒂𝒏𝒊𝒂 𓆩🖤𓆪",
+  "prefix": "/",
+  "adminOnly": {
+    "enable": false,
+    "ignoreCommand": []
+  },
+  "adminBot": [
+    "61571630409265",
+    "",
+    "",
+    "",
+    "",
+    ""
+  ],
+  "whiteListMode": {
+    "enable": false,
+    "whiteListIds": [
+      "61571630409265",
+      "",
+      ""
+    ],
+    "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
+  },
+  "whiteListModeThread": {
+    "enable": false,
+    "whiteListThreadIds": [],
+    "notes": "if you enable this feature, only the thread in the whiteListThreadIds list can use the bot",
+    "how_it_work": "if you enable both whiteListMode and whiteListModeThread, the system will check if the user is in whiteListIds, then check if the thread is in whiteListThreadIds, if one of the conditions is true, the user can use the bot"
+  },
+  "database": {
+    "type": "sqlite",
+    "uriMongodb": "",
+    "autoSyncWhenStart": false,
+    "autoRefreshThreadInfoFirstTime": true,
+    "notes": "(1) type selects 'json' or 'sqlite' or 'mongodb'. 'sqlite' is recommended for stability. (2) autoSyncWhenStart syncs data at start (may slow startup). (3) autoRefreshThreadInfoFirstTime refreshes thread info on first message."
+  },
+  "timeZone": "Asia/Dhaka",
+  "credentials": {
+    "gmailAccount": {
+      "email": null,
+      "clientId": null,
+      "clientSecret": null,
+      "refreshToken": null,
+      "apiKey": null
+    },
+    "gRecaptcha": {
+      "siteKey": null,
+      "secretKey": null
+    }
+  },
+  "dashBoard": {
+    "enable": true,
+    "expireVerifyCode": 300000,
+    "port": 9999
+  },
+  "serverUptime": {
+    "enable": false,
+    "port": 3001,
+    "socket": {
+      "enable": true,
+      "channelName": "uptime",
+      "verifyToken": ""
+    }
+  },
+  "autoRestart": {
+    "time": 172800000,
+    "notes": "Restart interval in milliseconds (172800000ms = 48 hours). Use cron syntax for specific times. Set to 0/false/null to disable."
+  },
+  "autoUptime": {
+    "enable": false,
+    "timeInterval": 180,
+    "url": "",
+    "notes": "Interval in seconds to ping a URL for service uptime (e.g., Glitch/Replit hosting)."
+  },
+  "autoLoadScripts": {
+    "enable": false,
+    "ignoreCmds": "",
+    "ignoreEvents": "",
+    "notes": "Automatically reloads scripts upon file changes. For production, this is often set to false for stability."
+  },
+  "autoRefreshFbstate": true,
+  "autoReloginWhenChangeAccount": true,
+  "autoRestartWhenListenMqttError": false,
+  "restartListenMqtt": {
+    "enable": true,
+    "timeRestart": 1800000,
+    "delayAfterStopListening": 2000,
+    "logNoti": true,
+    "notes": "Automated restart of the Facebook Messenger Listener (MQTT) on disconnection. Values in milliseconds."
+  },
+  "notiWhenListenMqttError": {
+    "notes": "Configures external services (Gmail, Telegram, Discord) for notifications when the Messenger MQTT connection fails (e.g., account lock/block).",
+    "gmail": {
+      "enable": false,
+      "emailGetNoti": "",
+      "note": "Can send to multiple emails (comma/space separated)."
+    },
+    "telegram": {
+      "enable": false,
+      "botToken": "",
+      "chatId": "",
+      "note": "Can send to multiple chat IDs (comma/space separated)."
+    },
+    "discordHook": {
+      "enable": false,
+      "webhookUrl": "",
+      "note": "Can send to multiple webhook URLs (comma/space separated)."
+    }
+  },
+  "hideNotiMessage": {
+    "commandNotFound": false,
+    "adminOnly": false,
+    "threadBanned": false,
+    "userBanned": false,
+    "needRoleToUseCmd": false,
+    "needRoleToUseCmdOnReply": false,
+    "needRoleToUseCmdOnReaction": false
+  },
+  "logEvents": {
+    "disableAll": false,
+    "message": true,
+    "message_reaction": true,
+    "message_unsend": true,
+    "message_reply": true,
+    "event": true,
+    "read_receipt": false,
+    "typ": false,
+    "presence": false
+  },
+  "optionsFca": {
+    "forceLogin": true,
+    "listenEvents": true,
+    "updatePresence": true,
+    "listenTyping": true,
+    "logLevel": "error",
+    "selfListen": false,
+    "selfListenEvent": true,
+    "autoMarkDelivery": false,
+    "autoReconnect": false,
+    "notes": "FCA (Facebook Chat API) options. Consult the FCA documentation for full details."
+  }
+}
