@@ -4,43 +4,43 @@ const path = require("path");
 
 const emojiVoiceDB = {
     "🥺": {
-        url: "https://drive.google.com/uc?export=download&id=1Gyi-zGUv5Yctk5eJRYcqMD2sbgrS_c1R",
+        url: "https://files.catbox.moe/pdmh1n.mp3",
         caption: "✨ 𝖬𝗂𝗌 𝖸𝗈𝗎 𝖡𝖾𝗉𝗂... 🥺"
     },
     "😍": {
-        url: "https://drive.google.com/uc?export=download&id=1lIsUIvmH1GFnI-Uz-2WSy8-5u69yQ0By",
+        url: "https://files.catbox.moe/l8ui0e.mp3",
         caption: "💖 𝖳𝗈𝗆𝖺𝗋 𝗉𝗋𝗈𝗍𝗂 𝖻𝗁𝖺𝗅𝗈𝖻𝖺𝗌𝖺 𝖽𝗂𝗇𝗄𝖾 𝖽𝗂𝗇 𝖻𝖺𝗋𝖼𝗁𝖾... 😍"
     },
     "😭": {
-        url: "https://drive.google.com/uc?export=download&id=1qU27pXIm5MV1uTyJVEVslrfLP4odHwsa",
+        url: "https://files.catbox.moe/rydf1i.mp3",
         caption: "😢 𝖩𝖺𝗇 𝗍𝗎𝗆𝗂 𝗄𝖺𝗇𝗇𝖺 𝗄𝗈𝗋𝗍𝖾𝖼𝗁𝗈 𝖪𝗈𝗇𝗈... 😭"
     },
     "😡": {
-        url: "https://drive.google.com/uc?export=download&id=1S_I7b3_f4Eb8znzm10vWn99Y7XHaSPYa",
+        url: "https://files.catbox.moe/tqjas3.mp3",
         caption: "⚡ 𝖱𝖺𝗀 𝗄𝗈𝗆𝖺𝗈, 𝗆𝖺𝖿 𝗄𝗈𝗋𝖺𝗂 𝖻𝗈𝗋𝗈𝗍to... 😡"
     },
     "🙄": {
-        url: "https://drive.google.com/uc?export=download&id=1gtovrHXVmQHyhK2I9F8d2Xbu7nKAa5GD",
+        url: "https://files.catbox.moe/lus763.mp3",
         caption: "🎭 𝖤𝖻𝗁𝖺𝖻𝖾 𝗍𝖺𝗄𝗂𝗈 𝗇𝖺 𝗍𝗎𝗆𝗂 𝖻𝗁𝖾𝖻𝖾 𝗅𝗈𝗃𝗃𝖺 𝗅𝖺𝗀𝖾 ... 🙄"
     },
     "😑": {
-        url: "https://drive.google.com/uc?export=download&id=1azElOD2QeaMbV2OdCY_W3tErD8JQ3T7P",
+        url: "https://files.catbox.moe/5rdtc6.mp3",
         caption: "🍋 𝖫𝖾𝖻𝗎 𝗄𝗁𝖺𝗈 𝗃𝖺𝗇 𝗌𝗈𝖻 𝗍𝗁𝗂𝗄 𝗁𝗈𝗒𝖾 𝗃𝖺𝖻𝖾 😑"
     },
     "😒": {
-        url: "https://drive.google.com/uc?export=download&id=1tbKe8yiU0RbINPlQgOwnig7KPXPDzjXv",
+        url: "https://files.catbox.moe/6l2e1p.mp3",
         caption: "❌ 𝖡𝗂𝗋𝗈𝗄𝗍 𝗄𝗈𝗋𝗈 𝗇𝖺 𝗃𝖺𝗇... ❤"
     },
     "🤣": {
-        url: "https://drive.google.com/uc?export=download&id=1Hvy_Xee8dAYp-Nul7iZtAq-xQt6-rNpU",
+        url: "https://files.catbox.moe/4kbbqj.mp3",
         caption: "😂 𝖧𝖺𝗌𝗅𝖾 𝗍𝗈𝗆𝖺𝗄𝖾 𝗉𝖺𝗀𝗈𝗅 𝖤𝗋 𝗆𝗈𝗍𝗈 𝗅𝖺𝗀𝖾... 🤣"
     },
     "💔": {
-        url: "https://drive.google.com/uc?export=download&id=1jQDnFc5MyxRFg_7PsZXCVJisIIqTI8ZY",
+        url: "https://files.catbox.moe/lgkxn5.mp3",
         caption: "🎵 𝖿𝖾𝖾𝗅 𝗍𝗁𝗂𝗌 𝗌𝗈𝗇𝗀... 💔"
     },
     "🙂": {
-        url: "https://drive.google.com/uc?export=download&id=1_sehHc-sDtzuqyB2kL_XGMuvm2Bv-Dqc",
+        url: "https://files.catbox.moe/i6xvbh.mp3",
         caption: "💫 𝖳𝗎𝗆𝗂 𝗄𝗂 𝖺𝖽𝗁𝗈 𝖺𝗆𝖺𝗄𝖾 𝖻𝗁𝖺𝗅𝗈𝖻𝖺𝗌𝗈 ... 🙂"
     }
 };
