@@ -74,7 +74,7 @@
     "shaon-videos-downloader": "^1.0.1",
     "jimp": "^0.16.13",
     "path": "^0.12.7",
-    "fca-unofficial": "npm:fca-unofficial@^1.3.1"  <-- **THIS IS THE CRITICAL ADDITION**
+    "fca-unofficial": "npm:fca-unofficial@^1.3.1"
   },
   "scripts": {
     "start": "node index.js",
