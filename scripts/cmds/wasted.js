@@ -1,5 +1,5 @@
-// Force Node.js built-in path — prevents conflict with npm "path"
-const nodePath = require("node:path");
+// FIXED: Use regular path instead of node:path
+const path = require("path");
 
 const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs-extra");
@@ -27,17 +27,17 @@ module.exports = {
       "canvas": "",
       "axios": "",
       "fs-extra": "",
-      "path": ""   // allowed as you requested (no removal)
+      "path": ""
     }
   },
 
   onStart: async function ({ api, event, args, message }) {
 
-    // cache folder paths (using built-in nodePath)
-    const cacheDir = nodePath.join(__dirname, "cache");
-    const avatarPath = nodePath.join(cacheDir, "avatar.png");
-    const overlayPath = nodePath.join(cacheDir, "overlay.png");
-    const finalPath = nodePath.join(cacheDir, "wasted_final.png");
+    // cache folder paths (using regular path)
+    const cacheDir = path.join(__dirname, "cache");
+    const avatarPath = path.join(cacheDir, "avatar.png");
+    const overlayPath = path.join(cacheDir, "overlay.png");
+    const finalPath = path.join(cacheDir, "wasted_final.png");
 
     try {
       // make cache dir if not exists
