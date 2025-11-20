@@ -3,61 +3,48 @@ const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
-  config: {
-    name: "edit",
-    version: "1.0",
-    author: "Saimx69x | API Renz",
-    countDown: 5,
-    role: 0,
-    shortDescription: "Edit image using FluxKontext API",
-    longDescription: "Edit an uploaded image based on your prompt using FluxKontext API.",
-    category: "ai-image-edit",
-    guide: "{p}edit [prompt] (reply to image)"
-  },
+config: {
+name: "edit",
+version: "1.0",
+author: "Rifat | nxo_here",
+countDown: 5,
+role: 0,
+shortDescription: { en: "Edit image using prompt" },
+longDescription: { en: "Edit an uploaded image based on your prompt." },
+category: "image",
+guide: { en: "{p}edit [prompt] (reply to image)" }
+},
 
-  onStart: async function ({ api, event, args, message }) {
-    const prompt = args.join(" ");
-    const repliedImage = event.messageReply?.attachments?.[0];
+onStart: async function ({ api, event, args, message }) {
+const prompt = args.join(" ");
+const repliedImage = event.messageReply?.attachments?.[0];
 
-    if (!repliedImage || repliedImage.type !== "photo") {
-      return message.reply(
-        "⚠️ Please reply to a photo **and** provide a prompt to edit it.\nExample: /edit Make it cartoon style"
-      );
-    }
+if (!prompt || !repliedImage || repliedImage.type !== "photo") {
+return message.reply("⚠️ | Please reply to a photo with your prompt to edit it.");
+}
 
-    if (!prompt) {
-      return message.reply(
-        "⚠️ Please provide a prompt to edit the image.\nExample: /edit Make it cartoon style"
-      );
-    }
+const imgPath = path.join(__dirname, "cache", `${Date.now()}_edit.jpg`);
+const waitMsg = await message.reply(`🧪 Editing image for: "${prompt}"...\nPlease wait...`);
 
-    const processingMsg = await message.reply("⏳ Processing your image...");
+try {
+const imgURL = repliedImage.url;
+const imageUrl = `https://edit-and-gen.onrender.com/gen?prompt=${encodeURIComponent(prompt)}&image=${encodeURIComponent(imgURL)}`;
+const res = await axios.get(imageUrl, { responseType: "arraybuffer" });
 
-    const imgPath = path.join(__dirname, "cache", `${Date.now()}_edit.jpg`);
+await fs.ensureDir(path.dirname(imgPath));
+await fs.writeFile(imgPath, Buffer.from(res.data, "binary"));
 
-    try {
-      const imgURL = repliedImage.url;
-      const apiURL = `https://dev.oculux.xyz/api/fluxkontext?prompt=${encodeURIComponent(prompt)}&ref=${encodeURIComponent(imgURL)}`;
-      
-      const res = await axios.get(apiURL, { responseType: "arraybuffer" });
+await message.reply({
+body: `✅ | Edited image for: "${prompt}"`,
+attachment: fs.createReadStream(imgPath)
+});
 
-      await fs.ensureDir(path.dirname(imgPath));
-      await fs.writeFile(imgPath, Buffer.from(res.data, "binary"));
-
-      await api.unsendMessage(processingMsg.messageID);
-      message.reply({
-        body: `✅ Edited image for: "${prompt}"`,
-        attachment: fs.createReadStream(imgPath)
-      });
-
-    } catch (err) {
-      console.error("EDIT Error:", err);
-      await api.unsendMessage(processingMsg.messageID);
-      message.reply("❌ Failed to edit image. Please try again later.");
-    } finally {
-      if (fs.existsSync(imgPath)) {
-        await fs.remove(imgPath);
-      }
-    }
-  }
+} catch (err) {
+console.error("EDIT Error:", err);
+message.reply("❌ | Failed to edit image. Please try again later.");
+} finally {
+await fs.remove(imgPath);
+api.unsendMessage(waitMsg.messageID);
+}
+}
 };
