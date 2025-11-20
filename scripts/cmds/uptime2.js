@@ -1,238 +1,175 @@
-const fs = require("fs-extra");
-const axios = require("axios");
+const fs = require("fs");
 const os = require("os");
-const { createCanvas, loadImage, registerFont } = require("canvas");
+const { createCanvas } = require("canvas");
 
 module.exports = {
   config: {
     name: "uptime2",
-    aliases: ["upt2", "botinfo2"],
-    version: "1.0.0",
-    author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
-    role: 1,
+    aliases: [],
+    version: "3.0",
+    author: "nexo_here",
+    cooldowns: 5,
+    role: 0,
+    shortDescription: "Bot's system status",
+    longDescription: "Show system info: uptime, RAM, CPU, load, platform etc",
     category: "system",
-    shortDescription: {
-      en: "📊 𝑆ℎ𝑜𝑤 𝑏𝑜𝑡 𝑢𝑝𝑡𝑖𝑚𝑒 𝑎𝑛𝑑 𝑠𝑦𝑠𝑡𝑒𝑚 𝑖𝑛𝑓𝑜𝑟𝑚𝑎𝑡𝑖𝑜𝑛 𝑤𝑖𝑡ℎ 𝑎𝑛𝑖𝑚𝑒 𝑡ℎ𝑒𝑚𝑒"
-    },
-    longDescription: {
-      en: "𝐷𝑖𝑠𝑝𝑙𝑎𝑦𝑠 𝑑𝑒𝑡𝑎𝑖𝑙𝑒𝑑 𝑠𝑦𝑠𝑡𝑒𝑚 𝑖𝑛𝑓𝑜𝑟𝑚𝑎𝑡𝑖𝑜𝑛 𝑤𝑖𝑡ℎ 𝑎𝑛𝑖𝑚𝑒-𝑡ℎ𝑒𝑚𝑒𝑑 𝑔𝑟𝑎𝑝ℎ𝑖𝑐𝑠"
-    },
-    guide: {
-      en: "{p}uptime2 [𝑎𝑛𝑖𝑚𝑒_𝑖𝑑] 𝑜𝑟 {p}uptime2 list [𝑝𝑎𝑔𝑒]"
-    },
-    countDown: 2,
-    dependencies: {
-      "axios": "",
-      "fs-extra": "",
-      "canvas": "",
-      "moment-timezone": "",
-      "pidusage": ""
-    }
+    guide: "{pn}"
   },
 
-  onStart: async function ({ api, event, args, message, threadsData }) {
-    try {
-      const time = process.uptime();
-      const hours = Math.floor(time / (60 * 60));
-      const minutes = Math.floor((time % (60 * 60)) / 60);
-      const seconds = Math.floor(time % 60);
+  onStart: async function ({ message }) {
+    const width = 1400;
+    const height = 800;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext("2d");
 
-      const z_1 = (hours < 10) ? '0' + hours : hours;
-      const x_1 = (minutes < 10) ? '0' + minutes : minutes;
-      const y_1 = (seconds < 10) ? '0' + seconds : seconds;
+    // Background gradient
+    const bgGradient = ctx.createLinearGradient(0, 0, width, height);
+    bgGradient.addColorStop(0, "#0d1a22");
+    bgGradient.addColorStop(1, "#091015");
+    ctx.fillStyle = bgGradient;
+    ctx.fillRect(0, 0, width, height);
 
-      const { commands } = global.client || { commands: new Map() };
-      const moment = require("moment-timezone");
-      const timeNow = moment.tz("Asia/Dhaka").format("DD/MM/YYYY || HH:mm:ss");
-      const pidusage = require("pidusage");
-      const timeStart = Date.now();
+    // Card with glow (Glassmorphism)
+    const cardX = 70, cardY = 70;
+    const cardWidth = width - 140, cardHeight = height - 140;
+    drawGlassCard(ctx, cardX, cardY, cardWidth, cardHeight, 30);
 
-      // ensure asset folder exists
-      const tadDir = __dirname + '/tad';
-      fs.ensureDirSync(tadDir);
+    // Title
+    ctx.font = "bold 58px 'Segoe UI'";
+    const titleGradient = ctx.createLinearGradient(cardX, cardY, cardX + 500, cardY);
+    titleGradient.addColorStop(0, "#00ffaa");
+    titleGradient.addColorStop(1, "#00cc88");
+    ctx.fillStyle = titleGradient;
+    ctx.shadowColor = "#00ffaa88";
+    ctx.shadowBlur = 20;
+    ctx.fillText("Ichigo AI – System Monitor", cardX + 50, cardY + 50);
+    ctx.shadowBlur = 0;
 
-      // CPU info
-      const cpus = os.cpus() || [];
-      let chips = "Unknown";
-      let speed = 0;
-      if (cpus.length > 0) {
-        chips = cpus[0].model || "Unknown";
-        speed = cpus[0].speed || 0;
-      }
+    // Sub divider
+    ctx.strokeStyle = "#00ffaa22";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cardX + 50, cardY + 120);
+    ctx.lineTo(cardX + cardWidth - 50, cardY + 120);
+    ctx.stroke();
 
-      // handle list command
-      if (args[0] === "list") {
-        try {
-          const alime = (await axios.get('https://raw.githubusercontent.com/quyenkaneki/data/main/dataanime.json')).data;
-          const count = alime.listAnime.length;
-          const data = alime.listAnime;
-          const page = parseInt(args[1]) || 1;
-          const limit = 20;
-          const numPage = Math.ceil(count / limit);
-          
-          let msg = "╔═════════════════╗\n";
-          msg +=     "║  𝐴𝑁𝐼𝑀𝐸 𝐿𝐼𝑆𝑇  ║\n";
-          msg +=     "╚═════════════════╝\n\n";
+    // System data
+    const uptime = process.uptime();
+    const d = Math.floor(uptime / 86400);
+    const h = Math.floor((uptime % 86400) / 3600);
+    const m = Math.floor((uptime % 3600) / 60);
+    const s = Math.floor(uptime % 60);
+    const botUptime = `${d}d ${h}h ${m}m ${s}s`;
 
-          const start = limit * (page - 1);
-          const end = Math.min(start + limit, count);
+    const totalMem = os.totalmem();
+    const freeMem = os.freemem();
+    const usedMem = totalMem - freeMem;
+    const ramUsagePercent = (usedMem / totalMem) * 100;
 
-          for (let i = start; i < end; i++) {
-            msg += `[${i + 1}] - ${data[i].ID} | ${data[i].name}\n`;
-          }
+    const cpus = os.cpus();
+    const cpuModel = cpus[0].model;
+    const cpuCount = cpus.length;
+    const loadAvg = os.loadavg()[0];
+    const cpuPercent = Math.min((loadAvg / cpuCount) * 100, 100);
 
-          msg += `\n╔═════════════════════════╗\n`;
-          msg += `║ 𝑃𝑎𝑔𝑒: ${page}/${numPage}          ║\n`;
-          msg += `║ 𝑈𝑠𝑒: ${global.config.PREFIX}uptime2 list <𝑝𝑎𝑔𝑒> ║\n`;
-          msg += `╚═════════════════════════╝`;
+    const nodeVer = process.version;
+    const platform = os.platform();
+    const arch = os.arch();
+    const hostname = os.hostname();
 
-          return message.reply(msg);
-        } catch (errList) {
-          console.error("Error fetching anime list:", errList);
-          return message.reply("Failed to fetch anime list.");
-        }
-      }
+    const info = [
+      ["⏱️ Uptime", botUptime],
+      ["🧠 CPU", `${cpuModel} (${cpuCount} cores)`],
+      ["📈 Load Avg", `${loadAvg.toFixed(2)} (${cpuPercent.toFixed(1)}%)`],
+      ["💾 RAM", `${(usedMem / 1024 / 1024).toFixed(1)} MB / ${(totalMem / 1024 / 1024).toFixed(1)} MB (${ramUsagePercent.toFixed(1)}%)`],
+      ["🛠️ Platform", `${platform} (${arch})`],
+      ["📦 Node", nodeVer],
+      ["🔖 Host", hostname]
+    ];
 
-      // choose id
-      const k = args[0];
-      const id = (!k) ? (Math.floor(Math.random() * 848) + 1) : k;
+    // Render info
+    let infoStartY = cardY + 150;
+    info.forEach(([label, value], i) => {
+      const y = infoStartY + i * 60;
+      ctx.fillStyle = "#00ffaa";
+      ctx.font = "bold 30px 'Segoe UI'";
+      ctx.fillText(label, cardX + 60, y);
+      ctx.fillStyle = "#ffffffcc";
+      ctx.font = "28px 'Segoe UI'";
+      ctx.fillText(value, cardX + 350, y);
+    });
 
-      // download fonts if not present
-      const fontUrls = {
-        "UTM-Avo.ttf": "https://github.com/quyenkaneki/data/blob/main/UTM-Avo.ttf?raw=true",
-        "phenomicon.ttf": "https://github.com/quyenkaneki/data/blob/main/phenomicon.ttf?raw=true",
-        "CaviarDreams.ttf": "https://github.com/quyenkaneki/data/blob/main/CaviarDreams.ttf?raw=true"
-      };
+    // RAM Usage Bar
+    drawProgressBar(ctx, cardX + 60, infoStartY + info.length * 60 + 40, cardWidth - 120, 40, ramUsagePercent, "RAM Usage", "#00ffaa", "#003322");
 
-      for (const [fontName, fontUrl] of Object.entries(fontUrls)) {
-        const fontPath = tadDir + `/${fontName}`;
-        if (!fs.existsSync(fontPath)) {
-          try {
-            const fontData = (await axios.get(fontUrl, { responseType: "arraybuffer" })).data;
-            fs.writeFileSync(fontPath, Buffer.from(fontData));
-          } catch (err) {
-            console.error(`Failed to download font ${fontName}:`, err.message);
-          }
-        }
-      }
+    // CPU Load Bar
+    drawProgressBar(ctx, cardX + 60, infoStartY + info.length * 60 + 120, cardWidth - 120, 40, cpuPercent, "CPU Load", "#ffaa00", "#332200");
 
-      // fetch image data
-      let lengthchar = [];
-      try {
-        lengthchar = (await axios.get('https://raw.githubusercontent.com/quyenkaneki/data/main/dataimganime.json')).data;
-      } catch (err) {
-        console.error("Failed to fetch character data:", err);
-        return message.reply("Failed to load character data.");
-      }
+    // Timestamp
+    ctx.font = "italic 22px 'Segoe UI'";
+    ctx.fillStyle = "#77ffd2";
+    ctx.fillText(`⏰ Generated: ${new Date().toLocaleString()}`, cardX + 60, height - 50);
 
-      const pathImg = tadDir + `/${id}.png`;
-      const pathAva = tadDir + `/${event.senderID}.png`;
+    // Save Image
+    const buffer = canvas.toBuffer("image/png");
+    const fileName = "uptime_report_ichigo_pro.png";
+    fs.writeFileSync(fileName, buffer);
 
-      // Download images
-      try {
-        const backgroundUrl = "https://imgur.com/x5JpRYu.png";
-        const avatarUrl = lengthchar[id]?.imgAnime || backgroundUrl;
+    // Plain text version
+    const plain = info.map(([l, v]) => `${l}: ${v}`).join("\n");
+    const bar1 = `RAM Usage: ${ramUsagePercent.toFixed(1)}%`;
+    const bar2 = `CPU Load: ${loadAvg.toFixed(2)} (${cpuPercent.toFixed(1)}%)`;
 
-        const [bgResp, avaResp] = await Promise.all([
-          axios.get(encodeURI(backgroundUrl), { responseType: "arraybuffer" }),
-          axios.get(encodeURI(avatarUrl), { responseType: "arraybuffer" })
-        ]);
-
-        fs.writeFileSync(pathImg, Buffer.from(bgResp.data));
-        fs.writeFileSync(pathAva, Buffer.from(avaResp.data));
-      } catch (errImg) {
-        console.error("Failed to download images:", errImg);
-        return message.reply("Failed to download background/avatar images.");
-      }
-
-      // Build canvas
-      const [l1, a] = await Promise.all([loadImage(pathAva), loadImage(pathImg)]);
-      const canvas = createCanvas(a.width, a.height);
-      const ctx = canvas.getContext("2d");
-
-      ctx.fillStyle = lengthchar[id]?.colorBg || "#2c3e50";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(l1, -200, -200, 1200, 1200);
-      ctx.drawImage(a, 0, 0, canvas.width, canvas.height);
-
-      // Register and use fonts
-      try {
-        registerFont(tadDir + `/phenomicon.ttf`, { family: "phenomicon" });
-        ctx.font = "130px phenomicon";
-        ctx.fillStyle = lengthchar[id]?.colorBg || "#2c3e50";
-        ctx.fillText(global.config.BOTNAME, 835, 340);
-      } catch (e) {
-        ctx.font = "80px Arial";
-        ctx.fillText(global.config.BOTNAME, 835, 340);
-      }
-
-      try {
-        registerFont(tadDir + `/UTM-Avo.ttf`, { family: "UTM" });
-        ctx.font = "70px UTM";
-        ctx.fillStyle = "#000000";
-        ctx.fillText(`${z_1} : ${x_1} : ${y_1}`, 980, 440);
-      } catch (e) {
-        ctx.font = "50px Arial";
-        ctx.fillText(`${z_1} : ${x_1} : ${y_1}`, 980, 440);
-      }
-
-      try {
-        registerFont(tadDir + `/CaviarDreams.ttf`, { family: "time" });
-        ctx.font = "55px time";
-        ctx.fillText("𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑", 930, 540);
-        ctx.fillText("61571630409265", 930, 610);
-      } catch (e) {
-        ctx.font = "40px Arial";
-        ctx.fillText("Asif Mahmud", 930, 540);
-        ctx.fillText("61571630409265", 930, 610);
-      }
-
-      const imageBuffer = canvas.toBuffer();
-      fs.writeFileSync(pathImg, imageBuffer);
-
-      // Get system info
-      const usage = await pidusage(process.pid);
-      const totalMem = os.totalmem();
-      const freeMem = os.freemem();
-      const usedMem = totalMem - freeMem;
-      const usedPercent = ((usedMem * 100) / totalMem).toFixed();
-
-      const infoBody = `======= 𝑆𝐸𝑅𝑉𝐸𝑅 𝐼𝑁𝐹𝑂𝑅𝑀𝐴𝑇𝐼𝑂𝑁 =======\n\n` +
-        `𝐶ℎ𝑖𝑝: ${chips}\n` +
-        `𝑃𝑟𝑜𝑐𝑒𝑠𝑠𝑖𝑛𝑔 𝑆𝑝𝑒𝑒𝑑: ${speed}𝑀𝐻𝑧\n\n` +
-        `𝑇𝑜𝑡𝑎𝑙 𝑀𝑒𝑚𝑜𝑟𝑦: ${this.byte2mb(totalMem)}\n` +
-        `𝑈𝑠𝑒𝑑: ${this.byte2mb(usedMem)} (${usedPercent}%)\n\n` +
-        `𝐵𝑜𝑡 𝑢𝑝𝑡𝑖𝑚𝑒: ${hours} ℎ𝑜𝑢𝑟𝑠 ${minutes} 𝑚𝑖𝑛𝑢𝑡𝑒𝑠 ${seconds} 𝑠𝑒𝑐𝑜𝑛𝑑𝑠\n\n` +
-        `❯ 𝑇𝑜𝑡𝑎𝑙 𝑢𝑠𝑒𝑟𝑠: ${global.data?.allUserID?.length || 0}\n` +
-        `❯ 𝑇𝑜𝑡𝑎𝑙 𝐺𝑟𝑜𝑢𝑝𝑠: ${global.data?.allThreadID?.length || 0}\n` +
-        `❯ 𝐶𝑃𝑈 𝑢𝑠𝑎𝑔𝑒: ${usage?.cpu?.toFixed(1) || "N/A"}%\n` +
-        `❯ 𝑅𝐴𝑀 𝑢𝑠𝑎𝑔𝑒: ${this.byte2mb(usage?.memory) || "N/A"}\n` +
-        `❯ 𝑃𝑖𝑛𝑔: ${Date.now() - timeStart}𝑚𝑠\n` +
-        `❯ 𝐶ℎ𝑎𝑟𝑎𝑐𝑡𝑒𝑟 𝐼𝐷: ${id}\n` +
-        `❯ 𝑂𝑤𝑛𝑒𝑟: 𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑\n` +
-        `❯ 𝐹𝑎𝑐𝑒𝑏𝑜𝑜𝑘 𝐼𝐷: 61571630409265`;
-
-      await message.reply({
-        body: infoBody,
-        attachment: fs.createReadStream(pathImg)
-      });
-
-      // Cleanup
-      try { fs.unlinkSync(pathImg); } catch (e) {}
-      try { fs.unlinkSync(pathAva); } catch (e) {}
-
-    } catch (error) {
-      console.error("Uptime2 command error:", error);
-      return message.reply("An error occurred while running the uptime command.");
-    }
-  },
-
-  byte2mb: function(bytes) {
-    if (!bytes && bytes !== 0) return '0 MB';
-    const units = ['𝐵𝑦𝑡𝑒𝑠', '𝐾𝐵', '𝑀𝐵', '𝐺𝐵', '𝑇𝐵', '𝑃𝐵', '𝐸𝐵', '𝑍𝐵', '𝑌𝐵'];
-    let l = 0;
-    let n = Number(bytes) || 0;
-    while (n >= 1024 && ++l) n = n / 1024;
-    return `${n.toFixed(n < 10 && l > 0 ? 1 : 0)} ${units[l]}`;
+    message.reply({
+      body: `🔧 AI – Uptime Report\n\n${plain}\n\n${bar1}\n${bar2}`,
+      attachment: fs.createReadStream(fileName)
+    });
   }
 };
+
+// Draw rounded glass card
+function drawGlassCard(ctx, x, y, w, h, r) {
+  ctx.shadowColor = "#00ffaa33";
+  ctx.shadowBlur = 30;
+  ctx.fillStyle = "rgba(255,255,255,0.04)";
+  roundRect(ctx, x, y, w, h, r, true, false);
+  ctx.shadowBlur = 0;
+}
+
+// Draw glowing progress bar
+function drawProgressBar(ctx, x, y, w, h, percent, label, fillColor, bgColor) {
+  ctx.fillStyle = bgColor;
+  roundRect(ctx, x, y, w, h, 20, true, false);
+
+  const fillW = (percent / 100) * w;
+  const grad = ctx.createLinearGradient(x, y, x + w, y);
+  grad.addColorStop(0, fillColor);
+  grad.addColorStop(1, "#003322");
+  ctx.fillStyle = grad;
+  ctx.shadowColor = fillColor + "66";
+  ctx.shadowBlur = 20;
+  roundRect(ctx, x, y, fillW, h, 20, true, false);
+  ctx.shadowBlur = 0;
+
+  ctx.fillStyle = "#ffffffcc";
+  ctx.font = "bold 24px 'Segoe UI'";
+  ctx.fillText(`${label}: ${percent.toFixed(1)}%`, x + 20, y + h / 2 + 6);
+}
+
+// RoundRect helper
+function roundRect(ctx, x, y, w, h, r, fill, stroke) {
+  if (typeof r === "number") r = { tl: r, tr: r, br: r, bl: r };
+  ctx.beginPath();
+  ctx.moveTo(x + r.tl, y);
+  ctx.lineTo(x + w - r.tr, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r.tr);
+  ctx.lineTo(x + w, y + h - r.br);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
+  ctx.lineTo(x + r.bl, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r.bl);
+  ctx.lineTo(x, y + r.tl);
+  ctx.quadraticCurveTo(x, y, x + r.tl, y);
+  ctx.closePath();
+  if (fill) ctx.fill();
+  if (stroke) ctx.stroke();
+}
