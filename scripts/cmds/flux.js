@@ -1,112 +1,99 @@
-const axios = require('axios');
-const { getStreamFromURL } = global.utils;
-const fs = require('fs');
-const path = require('path');
-const { createCanvas, loadImage } = require('canvas');
+const axios = require("axios");
+const fs = require("fs-extra");
 
 module.exports = {
   config: {
-    name: "fluxx",
-    version: "1.0",
-    author: "Redwan",
-    countDown: 20,
-    longDescription: {
-      en: "Generate AI images quickly using Fluxx (Redwan's API)."
-    },
-    category: "image generator 2",
+    name: "flux",
+    aliases: [],
+    version: "5.0",
+    author: "nexo_here",
+    countDown: 5,
     role: 0,
+    shortDescription: "Generate ultra-realistic AI images with advanced style options",
+    longDescription: "Use Flux API to generate premium, hyper-realistic AI images with customizable styles and options",
+    category: "AI-IMAGE",
     guide: {
-      en: "{pn} <prompt>"
+      en: `{pn} <prompt> | [style]\n\n📌 Example:\n{pn} a lion in desert | realistic\n{pn} warrior girl with sword | anime\n{pn} cybernetic dragon flying | cyberpunk`
     }
   },
 
-  onStart: async function ({ api, event, args, message }) {
-    const prompt = args.join(' ').trim();
-    if (!prompt) return message.reply("⚠️ Please provide a prompt to generate the image.");
+  langs: {
+    en: {
+      noPrompt: `❗ Please provide a prompt.\n\n📌 Example:\n• flux a lion in jungle | realistic\n• flux dragon on rooftop | fantasy`,
+      generating: "🖼️ Generating your premium AI image...",
+      failed: "❌ Failed to generate image. Please try again later.",
+      invalidStyle: "⚠️ Unknown style provided! Using your prompt as is."
+    }
+  },
 
-    api.setMessageReaction("⌛", event.messageID, () => {}, true);
-    message.reply("⚡ Fluxx is generating your images. Please wait...", async () => {
-      try {
-        // ✅ Fluxx API
-        const apiUrl = `http://65.109.80.126:20511/api/fluxx?prompt=${encodeURIComponent(prompt)}`;
-        const response = await axios.get(apiUrl);
+  onStart: async function ({ message, args, getLang }) {
+    if (!args[0]) return message.reply(getLang("noPrompt"));
 
-        if (!response?.data?.status || !Array.isArray(response.data.images) || response.data.images.length !== 4) {
-          api.setMessageReaction("❌", event.messageID, () => {}, true);
-          return message.reply("❌ Image generation failed. Try a different prompt.");
-        }
+    const input = args.join(" ").split("|");
+    const rawPrompt = input[0].trim();
+    let style = input[1]?.trim().toLowerCase() || "";
 
-        const imageLinks = response.data.images;
-        const imageObjs = await Promise.all(imageLinks.map(url => loadImage(url)));
+    // অনেক উন্নত স্টাইল ম্যাপ (AI image gen এর জন্য জনপ্রিয় ট্যাগসহ)
+    const styleMap = {
+      realistic: "photorealistic, ultra-detailed, 8K UHD, DSLR quality, natural lighting, depth of field",
+      anime: "anime style, vibrant colors, sharp lines, cel shading, highly detailed character art",
+      fantasy: "fantasy art, epic background, magical aura, dramatic lighting, mythical creatures",
+      cyberpunk: "cyberpunk, neon lights, futuristic cityscape, dark atmosphere, high tech details",
+      cartoon: "cartoon style, bold outlines, bright colors, 2D animation look, fun and playful",
+      "digital art": "digital painting, smooth brush strokes, vivid colors, high detail",
+      "oil painting": "oil painting style, textured brush strokes, classical art, warm tones",
+      "photography": "professional photography, natural light, sharp focus, realistic",
+      "low poly": "low poly art style, geometric shapes, minimalistic, vibrant colors",
+      "pixel art": "pixel art style, retro gaming, 8-bit colors, sharp edges",
+      "surrealism": "surrealistic art, dreamlike scenes, abstract, vivid imagination",
+      "vaporwave": "vaporwave style, pastel colors, retro-futuristic, glitch art",
+      "concept art": "concept art, detailed environment, mood lighting, cinematic",
+      "portrait": "portrait photography, close-up, high detail, studio lighting",
+      "macro": "macro photography, extreme close-up, detailed textures, shallow depth of field"
+    };
 
-        const canvas = createCanvas(1024, 1024);
-        const ctx = canvas.getContext('2d');
-
-        ctx.drawImage(imageObjs[0], 0, 0, 512, 512);
-        ctx.drawImage(imageObjs[1], 512, 0, 512, 512);
-        ctx.drawImage(imageObjs[2], 0, 512, 512, 512);
-        ctx.drawImage(imageObjs[3], 512, 512, 512, 512);
-
-        const cacheDir = path.join(__dirname, 'cache');
-        fs.mkdirSync(cacheDir, { recursive: true });
-
-        const fileName = `fluxx_collage_${event.senderID}_${Date.now()}.png`;
-        const outputPath = path.join(cacheDir, fileName);
-
-        const out = fs.createWriteStream(outputPath);
-        const stream = canvas.createPNGStream();
-        stream.pipe(out);
-
-        out.on("finish", async () => {
-          api.setMessageReaction("✅", event.messageID, () => {}, true);
-          const msg = {
-            body: "✅ Fluxx image is ready!\n\n❏ Reply with U1, U2, U3, or U4 to choose one.",
-            attachment: fs.createReadStream(outputPath)
-          };
-          message.reply(msg, (err, info) => {
-            if (!err) {
-              global.GoatBot.onReply.set(info.messageID, {
-                commandName: this.config.name,
-                messageID: info.messageID,
-                author: event.senderID,
-                images: imageLinks
-              });
-            }
-          });
-        });
-
-      } catch (error) {
-        console.error(error);
-        api.setMessageReaction("❌", event.messageID, () => {}, true);
-        message.reply("🚫 An error occurred while generating the image. Try again later.");
+    // যদি style থাকে, সেটি styleMap থেকে নিবো, অন্যথায় rawPrompt ব্যবহার করবো
+    let finalPrompt;
+    if (style) {
+      if (styleMap[style]) {
+        finalPrompt = `${rawPrompt}, ${styleMap[style]}`;
+      } else {
+        // Unknown style দিলে শুধু rawPrompt নিবে এবং ইউজারকে জানাবে
+        finalPrompt = rawPrompt;
+        message.reply(getLang("invalidStyle"));
       }
-    });
-  },
-
-  onReply: async function ({ api, event, Reply, message }) {
-    const { author, images } = Reply;
-    if (event.senderID !== author) {
-      return message.reply("⚠️ Only the person who started the command can select an image.");
+    } else {
+      finalPrompt = rawPrompt;
     }
 
-    const input = event.body.trim().toUpperCase();
-    const match = input.match(/^U([1-4])$/);
-    if (!match) {
-      return message.reply("❌ Invalid input. Reply with U1, U2, U3, or U4.");
-    }
-
-    const index = parseInt(match[1]) - 1;
-    const selectedImage = images[index];
+    message.reply(getLang("generating"));
 
     try {
-      const imageStream = await getStreamFromURL(selectedImage, `fluxx_selected_U${index + 1}.jpg`);
-      message.reply({
-        body: `🖼️ Here is your selected image (U${index + 1}) from Fluxx.`,
-        attachment: imageStream
+      const res = await axios.get(`https://betadash-api-swordslush-production.up.railway.app/flux?prompt=${encodeURIComponent(finalPrompt)}`);
+      const imageUrl = res?.data?.data?.imageUrl;
+
+      if (!imageUrl) return message.reply(getLang("failed"));
+
+      const imgStream = await axios.get(imageUrl, { responseType: "stream" });
+      const filePath = `${__dirname}/cache/flux_${Date.now()}.jpg`;
+      const writer = fs.createWriteStream(filePath);
+
+      imgStream.data.pipe(writer);
+
+      writer.on("finish", () => {
+        message.reply({
+          body: `🧠 Prompt: ${rawPrompt}${style ? `\n🎨 Style: ${style}` : ""}`,
+          attachment: fs.createReadStream(filePath)
+        }, () => fs.unlinkSync(filePath));
       });
-    } catch (error) {
-      console.error(error);
-      message.reply("🚫 Could not fetch the selected image. Please try again.");
+
+      writer.on("error", () => {
+        message.reply(getLang("failed"));
+      });
+
+    } catch (err) {
+      console.error(err.message);
+      return message.reply(getLang("failed"));
     }
   }
 };
