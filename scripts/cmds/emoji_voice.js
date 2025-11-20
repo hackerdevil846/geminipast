@@ -11,10 +11,6 @@ const emojiVoiceDB = {
         url: "https://files.catbox.moe/l8ui0e.mp3",
         caption: "💖 𝖳𝗈𝗆𝖺𝗋 𝗉𝗋𝗈𝗍𝗂 𝖻𝗁𝖺𝗅𝗈𝖻𝖺𝗌𝖺 𝖽𝗂𝗇𝗄𝖾 𝖽𝗂𝗇 𝖻𝖺𝗋𝖼𝗁𝖾... 😍"
     },
-    "😭": {
-        url: "https://files.catbox.moe/rydf1i.mp3",
-        caption: "😢 𝖩𝖺𝗇 𝗍𝗎𝗆𝗂 𝗄𝖺𝗇𝗇𝖺 𝗄𝗈𝗋𝗍𝖾𝖼𝗁𝗈 𝖪𝗈𝗇𝗈... 😭"
-    },
     "😡": {
         url: "https://files.catbox.moe/tqjas3.mp3",
         caption: "⚡ 𝖱𝖺𝗀 𝗄𝗈𝗆𝖺𝗈, 𝗆𝖺𝖿 𝗄𝗈𝗋𝖺𝗂 𝖻𝗈𝗋𝗈𝗍to... 😡"
