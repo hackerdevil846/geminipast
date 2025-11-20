@@ -1,3 +1,4 @@
+
 name: Node.js CI
 
 on:
@@ -8,41 +9,21 @@ on:
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
-    
-    # Use the specific Node.js version required by your bot
+
     strategy:
       matrix:
-        node-version: [20.x] 
+        node-version: [20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
     - uses: actions/checkout@v4
-      
-    - name: Set up Node.js ${{ matrix.node-version }}
+    - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm' # Uses package-lock.json for caching
-        
-    - name: Install Dependencies
-      run: npm install
-
-    - name: Create Dummy Configs for CI (Crucial for preventing crash)
-      # Creates placeholder files that index.js will attempt to read.
-      run: |
-        # Create dummy appstate.json (empty array)
-        echo "[]" > appstate.json
-        # Create a dummy config.json if missing 
-        if [ ! -f config.json ]; then
-            echo '{"prefix": "/", "timeZone": "Asia/Dhaka", "optionsFca": {}, "facebookAccount": {}}' > config.json
-        fi
-
-    - name: Verify Build and Start Sequence
-      # This runs npm start. The '|| echo "..."' ensures the step succeeds 
-      # even though the bot fails to log in (which is expected in CI/without credentials), 
-      # confirming that all modules and files load correctly.
-      run: npm start || echo "Bot failed to log in (expected in CI), but code dependencies successfully loaded."
-
-    - name: Cleanup 
-      # Removes the dummy appstate file before job completion
-      run: rm -f appstate.json
+        cache: 'npm'
+    - run: npm install
+    - run: npm start
+    - run: npm test
