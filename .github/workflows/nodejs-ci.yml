@@ -1,3 +1,4 @@
+
 name: Node.js CI
 
 on:
@@ -8,41 +9,21 @@ on:
 
 jobs:
   build:
+
     runs-on: ubuntu-latest
-    
+
     strategy:
       matrix:
-        node-version: [20.x] 
+        node-version: [20.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
     - uses: actions/checkout@v4
-      
-    - name: Set up Node.js ${{ matrix.node-version }}
+    - name: Use Node.js ${{ matrix.node-version }}
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm' # Requires package-lock.json to be committed!
-        
-    - name: Install Dependencies
-      run: npm install
-
-    - name: Create Dummy Configs for CI
-      # This step creates dummy files so index.js doesn't crash on required imports.
-      run: |
-        echo "[]" > appstate.json
-        # Temporarily modify config to use 'json' DB type for CI stability
-        cp config.json config.temp.json
-        # We need 'jq' for this. If 'jq' is not on your runner, the next step may fail.
-        # Ubuntu runners typically have 'jq', but I will keep the fix simple for now.
-        if command -v jq &> /dev/null; then
-          jq '.database.type = "json"' config.temp.json > config.json
-        fi
-
-    - name: Verify Build and Start Sequence
-      # Run npm start. It is expected to fail the actual login, but if it gets 
-      # past dependency loading, the build is considered successful.
-      run: npm start || echo "Bot failed to log in (expected in CI), but code dependencies successfully loaded."
-
-    - name: Clean Up Config
-      # Restore the original config.json
-      run: if [ -f config.temp.json ]; then mv config.temp.json config.json; fi
+        cache: 'npm'
+    - run: npm install
+    - run: npm start
+    - run: npm test
