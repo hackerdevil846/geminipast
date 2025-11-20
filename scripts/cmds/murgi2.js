@@ -1,118 +1,64 @@
 module.exports = {
-    config: {
-        name: "murgi2",
-        aliases: ["interactive"],
-        version: "1.0.2",
-        role: 2,
-        author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
-        shortDescription: {
-            en: "𝐼𝑛𝑡𝑒𝑟𝑎𝑐𝑡𝑖𝑣𝑒 𝑚𝑒𝑠𝑠𝑎𝑔𝑖𝑛𝑔 𝑠𝑒𝑞𝑢𝑒𝑛𝑐𝑒"
-        },
-        longDescription: {
-            en: "𝐼𝑛𝑡𝑒𝑟𝑎𝑐𝑡𝑖𝑣𝑒 𝑚𝑒𝑠𝑠𝑎𝑔𝑖𝑛𝑔 𝑠𝑒𝑞𝑢𝑒𝑛𝑐𝑒 𝑤𝑖𝑡ℎ 𝑚𝑒𝑛𝑡𝑖𝑜𝑛𝑠"
-        },
-        category: "𝑓𝑢𝑛",
-        guide: {
-            en: "{p}murgi2 [@𝑚𝑒𝑛𝑡𝑖𝑜𝑛]"
-        },
-        countDown: 5,
-        dependencies: {}
-    },
+  config: {
+    name: "murgi2",
+    aliases: [],
+    version: "1.0",
+    author: "Asif",
+    role: 2,
+    category: "admin",
+    guide: {
+      vi: "Not Available",
+      en: "murgi2 @(mention)"
+    } 
+  },
 
-    onStart: async function({ message, event }) {
-        try {
-            const mention = Object.keys(event.mentions)[0];
-            if (!mention) {
-                return message.reply("✨ 𝐵𝑜𝑠 𝑗𝑒 𝑚𝑒𝑦𝑒𝑘𝑒 𝑘𝑢𝑑𝑑𝑒 𝑐ℎ𝑎𝑢 𝑠𝑒 𝑚𝑒𝑦𝑒𝑘𝑒 @𝑚𝑎𝑛𝑠ℎ𝑜𝑛 𝑑𝑒𝑢 ✨");
-            }
-
-            const name = event.mentions[mention];
-            const arraytag = [{ id: mention, tag: name }];
-            const send = (msg) => message.reply(msg);
-
-            // Message sequence with exact original content and timing
-            const messages = [
-                { delay: 0, msg: "💥 𝐶ℎ𝑢𝑑𝑎 𝑙𝑜" },
-                { delay: 3000, msg: { body: `𝐾ℎ𝑎𝑛𝑔𝑘𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑚𝑎𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 🥰 ${name}`, mentions: arraytag } },
-                { delay: 5000, msg: { body: `𝐾ℎ𝑎𝑛𝑔𝑘𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏𝑜𝑛 𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 😍 ${name}`, mentions: arraytag } },
-                { delay: 7000, msg: { body: `𝑀𝑎𝑑𝑎𝑟𝑐ℎ𝑜𝑑 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢 𝑝𝑜𝑚 𝑝𝑜𝑚 𝑘ℎ𝑎𝑛𝑔𝑘𝑖𝑟 𝑝𝑜 🐰 ${name}`, mentions: arraytag } },
-                { delay: 9000, msg: { body: `𝐾ℎ𝑎𝑛𝑔𝑘𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏ℎ𝑢𝑑𝑎𝑦 𝑏ℎ𝑢𝑑𝑎𝑦 𝑘𝑎𝑚𝑜𝑟 𝑑𝑖𝑚𝑢  💔! ${name}`, mentions: arraytag } },
-                { delay: 12000, msg: { body: `𝐾ℎ𝑎𝑛𝑔𝑘𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑘𝑜𝑡ℎ𝑎 𝑘 𝑘𝑜𝑚 𝑘𝑜𝑚 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑐ℎ𝑢𝑑𝑒 𝑏𝑎𝑛𝑎𝑚𝑢 𝑎𝑖𝑡𝑒𝑚 𝑏𝑜𝑚 ${name}`, mentions: arraytag } },
-                { delay: 15000, msg: { body: `𝑑𝑒𝑝𝑟𝑒𝑠𝑠𝑖𝑜𝑛 𝑡ℎ𝑒𝑘𝑒𝑜 𝑡𝑜𝑟 𝑚𝑎𝑖𝑟𝑒 𝑐ℎ𝑢*** 𝑑𝑖 🤬 ${name}`, mentions: arraytag } },
-                { delay: 17000, msg: { body: `𝑇𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑎𝑐ℎ𝑎𝑟 𝑒𝑟 𝑙𝑜𝑏ℎ 𝑑𝑒𝑘ℎ𝑖 𝑐ℎ𝑢𝑑𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒🤬 ${name}`, mentions: arraytag } },
-                { delay: 20000, msg: { body: `𝐵𝑎𝑛𝑑𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏𝑜𝑛𝑒𝑟 𝑏ℎ𝑢𝑑𝑎 𝑓𝑎𝑘 𝑘𝑜𝑟 𝑡ℎ𝑢𝑡𝑢 𝑑𝑖𝑦𝑒 𝑏ℎ𝑢𝑑𝑎𝑦 𝑑𝑜𝑛 𝑑𝑢𝑘𝑎𝑚𝑢 🤟 ${name}`, mentions: arraytag } },
-                { delay: 23000, msg: { body: `𝐵𝑎𝑛𝑑𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 𝑡𝑜𝑟 𝑑𝑢𝑙𝑎 𝑏ℎ𝑎𝑖 𝑒𝑟 𝑘𝑎𝑛𝑑𝑒 𝑓𝑒𝑙𝑒  🤝 ${name}`, mentions: arraytag } },
-                { delay: 25000, msg: { body: `𝑈𝑓𝑓𝑓𝑓 𝑘ℎ𝑎𝑑𝑑𝑎𝑚𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢𝑟 𝑘𝑎𝑙𝑎 𝑏ℎ𝑢𝑑𝑎𝑦 𝑎𝑚𝑎𝑟 𝑚𝑎𝑙 𝑎𝑢𝑡 𝑡𝑜𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏𝑜𝑛 𝑟𝑒 𝑢𝑝𝑡𝑎 𝑘𝑜𝑟𝑒 𝑒𝑏𝑎𝑟 𝑐ℎ𝑢𝑑𝑏𝑜  💉 ${name}`, mentions: arraytag } },
-                { delay: 28500, msg: { body: `𝐴𝑛𝑜𝑙𝑎𝑖𝑛𝑒 𝑔𝑎𝑙𝑖 𝑏𝑎𝑗 ℎ𝑜𝑦𝑒 𝑔𝑒𝑐ℎ𝑡 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑒𝑚𝑜𝑛 𝑐ℎ𝑢𝑑𝑎 𝑑𝑖𝑚𝑢 𝑙𝑎𝑖𝑓 𝑡𝑎𝑖𝑚 𝑚𝑜𝑛𝑒 𝑟𝑎𝑘ℎ𝑣𝑖  𝑎𝑠𝑖𝑓 𝑡𝑜𝑟 𝑏𝑎𝑝 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 😘 ${name}`, mentions: arraytag } },
-                { delay: 31000, msg: { body: `𝐵𝑎𝑡𝑖𝑗𝑎 𝑠ℎ𝑢𝑛 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑐ℎ𝑢𝑑𝑙𝑒 𝑟𝑎𝑔 𝑘𝑜𝑟𝑏𝑖 𝑛𝑎 𝑡𝑜 𝑎𝑐𝑐ℎ𝑎 𝑗𝑎 𝑟𝑎𝑔 𝑘𝑜𝑟𝑖𝑠 𝑛𝑎 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢𝑟 𝑘𝑎𝑙𝑎 𝑏ℎ𝑢𝑑𝑎𝑦 𝑎𝑟 𝑐ℎ𝑢𝑑𝑙𝑎𝑚 𝑛𝑎 𝑡𝑜 𝑏𝑜𝑛 𝑒𝑟 𝑗𝑎𝑚𝑎 𝑡𝑎 𝑘ℎ𝑢𝑙𝑒 𝑑𝑒  ✋ ${name}`, mentions: arraytag } },
-                { delay: 36000, msg: { body: `𝐻𝑎𝑖 𝑚𝑎𝑑𝑎𝑟𝑐ℎ𝑜𝑑 𝑡𝑜𝑟 𝑡𝑜𝑟 𝑏𝑦𝑎𝑠ℎ𝑎 𝑗𝑎𝑡𝑒𝑟 𝑎𝑚𝑚𝑢 𝑡𝑎 𝑟𝑒 𝑎𝑑𝑜𝑟 𝑘𝑜𝑟𝑒 𝑘𝑜𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 ${name}`, mentions: arraytag } },
-                { delay: 39000, msg: "~ 𝐶ℎ𝑢𝑑𝑎 𝑘𝑖 𝑎𝑟𝑜 𝑘ℎ𝑎𝑏𝑖 𝑚𝑎𝑔𝑖𝑟 𝑝𝑜𝑙 🤖" },
-                { delay: 42000, msg: { body: `𝐾ℎ𝑎𝑛𝑔𝑘𝑖𝑟 𝑚𝑒𝑦𝑒 🥰 ${name}`, mentions: arraytag } },
-                { delay: 48000, msg: { body: `𝑀𝑎𝑑𝑎𝑟𝑐ℎ𝑜𝑑😍 ${name}`, mentions: arraytag } },
-                { delay: 51000, msg: { body: `𝐵𝑦𝑎𝑠𝑠𝑦𝑎𝑟 𝑚𝑒𝑦𝑒 🐰 ${name}`, mentions: arraytag } },
-                { delay: 54000, msg: { body: `𝐵𝑦𝑎𝑠ℎ𝑦𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒  💔! ${name}`, mentions: arraytag } },
-                { delay: 57000, msg: { body: `𝑃𝑜𝑡𝑖𝑡𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 ${name}`, mentions: arraytag } },
-                { delay: 59400, msg: { body: `𝑑𝑒𝑝𝑟𝑒𝑠𝑠𝑖𝑜𝑛 𝑡ℎ𝑒𝑘𝑒𝑜 𝑡𝑜𝑟 𝑚𝑎𝑖𝑟𝑒 𝑐ℎ𝑢*** 𝑑𝑖 🤬 ${name}`, mentions: arraytag } },
-                { delay: 63000, msg: { body: `𝑇𝑜𝑟 𝑚𝑎𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 ${name}`, mentions: arraytag } },
-                { delay: 66000, msg: { body: `𝑁𝑎𝑡 𝑏𝑜𝑙𝑡𝑢 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒🤟 ${name}`, mentions: arraytag } },
-                { delay: 69000, msg: { body: `𝑇𝑜𝑟 𝑏𝑜𝑛 𝑟𝑒 𝑝𝑎𝑦𝑗𝑎𝑚𝑎 𝑘ℎ𝑢𝑙𝑒 𝑐ℎ𝑢𝑑𝑖 🤣 ${name}`, mentions: arraytag } },
-                { delay: 72000, msg: { body: `𝑈𝑚𝑚𝑚𝑚𝑎 𝑡𝑜𝑟 𝑏𝑜𝑛 𝑒𝑟𝑘𝑜𝑐ℎ𝑖 𝑏ℎ𝑢𝑑𝑎𝑦💉 ${name}`, mentions: arraytag } },
-                { delay: 75000, msg: { body: `𝐷𝑁𝐴 𝑡𝑒𝑠𝑡 𝑘𝑜𝑟𝑎 𝑑𝑒𝑘ℎ𝑏𝑖 𝑎𝑚𝑎𝑟 𝑐ℎ𝑢𝑑𝑎 𝑡𝑒𝑖 𝑡𝑜𝑟 𝑗𝑜𝑛𝑚𝑜 ${name}`, mentions: arraytag } },
-                { delay: 81000, msg: { body: `𝐾𝑎𝑚𝑙𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒  ✋ ${name}`, mentions: arraytag } },
-                { delay: 87000, msg: { body: `𝐵𝑎𝑠𝑡𝑟𝑎𝑑 𝑒𝑟 𝑏𝑎𝑐𝑐ℎ𝑎 𝑏𝑜𝑠𝑡𝑖𝑟 𝑚𝑒𝑦𝑒 ${name}`, mentions: arraytag } },
-                { delay: 93000, msg: "~ 𝐴𝑚𝑎𝑟 𝑗𝑎𝑟𝑗 𝑠ℎ𝑜𝑛𝑡𝑎𝑛🤖" },
-                { delay: 99000, msg: { body: `𝑊𝑒𝑙𝑐𝑜𝑚𝑒 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 🥰 ${name}`, mentions: arraytag } },
-                { delay: 105000, msg: { body: `𝑇𝑜𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏𝑜𝑛 𝑒𝑟 𝑝𝑜𝑚 𝑝𝑜𝑚😍 ${name}`, mentions: arraytag } },
-                { delay: 111000, msg: { body: `𝐵𝑦𝑎𝑠𝑠𝑦𝑎𝑟 𝑚𝑒𝑦𝑒 𝑘𝑜𝑡ℎ𝑎 𝑠ℎ𝑢𝑛 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 𝑔𝑎𝑚𝑐ℎ𝑎 𝑝𝑒𝑐ℎ𝑖𝑦𝑒🐰 ${name}`, mentions: arraytag } },
-                { delay: 114000, msg: { body: `𝐻𝑖 𝑎𝑠𝑖𝑓 𝑒𝑟 𝑗𝑎𝑟𝑗 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒  💔! ${name}`, mentions: arraytag } },
-                { delay: 120000, msg: { body: `20 𝑡𝑎𝑘𝑎 𝑒 𝑝𝑜𝑡𝑖𝑡𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 ${name}`, mentions: arraytag } },
-                { delay: 126000, msg: { body: `𝑑𝑒𝑝𝑟𝑒𝑠𝑠𝑖𝑜𝑛 𝑡ℎ𝑒𝑘𝑒𝑜 𝑡𝑜𝑟 𝑚𝑎𝑖𝑟𝑒 𝑐ℎ𝑢*** 𝑑𝑖 🤬 ${name}`, mentions: arraytag } },
-                { delay: 132000, msg: { body: `𝐵𝑜𝑠𝑡𝑖𝑟 𝑚𝑒𝑦𝑒 𝑎𝑛𝑜𝑙𝑎𝑖𝑛𝑒𝑟 𝑘𝑖𝑛𝑔 ${name}`, mentions: arraytag } },
-                { delay: 138000, msg: { body: `𝑇𝑢𝑘𝑎𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒🤟 ${name}`, mentions: arraytag } },
-                { delay: 144000, msg: { body: `𝑇𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑝𝑎𝑦𝑗𝑎𝑚𝑎 𝑘ℎ𝑢𝑙𝑒 𝑐ℎ𝑢𝑑𝑖 🤣 ${name}`, mentions: arraytag } },
-                { delay: 150000, msg: { body: `𝑈𝑚𝑚𝑚𝑚𝑎 𝑡𝑜𝑟 𝑏𝑜𝑛 𝑒𝑟𝑘𝑜𝑐ℎ𝑖 𝑏ℎ𝑢𝑑𝑎𝑦💉 ${name}`, mentions: arraytag } },
-                { delay: 156000, msg: { body: `𝐷𝑁𝐴 𝑡𝑒𝑠𝑡 𝑘𝑜𝑟𝑎 𝑑𝑒𝑘ℎ𝑏𝑖 𝑎𝑚𝑎𝑟 𝑐ℎ𝑢𝑑𝑎 𝑡𝑒𝑖 𝑡𝑜𝑟 𝑗𝑜𝑛𝑚𝑜 ${name}`, mentions: arraytag } },
-                { delay: 162000, msg: { body: `𝐻𝑖𝑗𝑙𝑎 𝑚𝑎𝑔𝑖𝑟 �𝑚𝑒𝑦𝑒  ✋ ${name}`, mentions: arraytag } },
-                { delay: 168000, msg: { body: `𝐵𝑜𝑠𝑡𝑖𝑟𝑖𝑛𝑑𝑎𝑙𝑎𝑙 𝑒𝑟 𝑏𝑎𝑐𝑐ℎ𝑎 𝑏𝑜𝑠𝑡𝑖𝑟 𝑚𝑒𝑦𝑒 ${name}`, mentions: arraytag } },
-                { delay: 171000, msg: "~ 𝐴𝑚𝑎𝑟 𝑗𝑎𝑟𝑗 𝑠ℎ𝑜𝑛𝑡𝑎𝑛 𝑗𝑎 𝑏ℎ𝑎𝑔🤖" },
-                { delay: 174000, msg: { body: `𝑊𝑒𝑙𝑐𝑜𝑚𝑒 𝑠ℎ𝑢𝑦𝑜𝑟𝑒𝑟 𝑏𝑎𝑐𝑐ℎ𝑎 🥰 ${name}`, mentions: arraytag } },
-                { delay: 177000, msg: { body: `𝐾𝑢𝑡𝑡𝑎𝑟 𝑏𝑎𝑐𝑐ℎ𝑎 𝑡𝑜𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏𝑜𝑛 𝑒𝑟 𝑝𝑜𝑚 𝑝𝑜𝑚😍 ${name}`, mentions: arraytag } },
-                { delay: 180000, msg: { body: `𝐾ℎ𝑎𝑛𝑘𝑖𝑟𝑚𝑒𝑦𝑒 𝑚𝑒𝑦𝑒 𝑘𝑜𝑡ℎ𝑎 𝑠ℎ𝑢𝑛 𝑡𝑜𝑟 𝑎𝑚𝑚𝑢 𝑟𝑒 𝑐ℎ𝑢𝑑𝑖 𝑔𝑎𝑚𝑐ℎ𝑎 𝑝𝑒𝑐ℎ𝑖𝑦𝑒🐰 ${name}`, mentions: arraytag } },
-                { delay: 9000, msg: { body: `𝐻𝑖 𝑎𝑠𝑖𝑓 𝑒𝑟 𝑗𝑎𝑟𝑗 �𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒  💔! ${name}`, mentions: arraytag } },
-                { delay: 12000, msg: { body: `𝐾ℎ𝑎𝑛𝑘𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 ${name}`, mentions: arraytag } },
-                { delay: 15000, msg: { body: `𝑇𝑜𝑟 𝑏𝑎𝑝𝑒 𝑡𝑜𝑟 𝑛𝑎𝑛𝑎 🤬 ${name}`, mentions: arraytag } },
-                { delay: 17000, msg: { body: `𝐵𝑜𝑠𝑡𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑏𝑜𝑖𝑛𝑟𝑒 𝑚𝑢𝑠𝑙𝑖𝑚𝑎𝑛𝑖 𝑑𝑖𝑚𝑢 ${name}`, mentions: arraytag } },
-                { delay: 20000, msg: { body: `𝑇𝑢𝑘𝑎𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑚𝑜𝑏𝑎𝑖𝑙 𝑏ℎ𝑎𝑖𝑏𝑟𝑎𝑡𝑖𝑜𝑛 𝑘𝑜𝑖𝑟𝑎 𝑡𝑢𝑟 𝑘𝑜𝑐ℎ𝑖 𝑏𝑜𝑛 𝑒𝑟 𝑝𝑢𝑘𝑜𝑡𝑖𝑡𝑒 𝑏ℎ𝑜𝑟𝑏𝑜 🤟 ${name}`, mentions: arraytag } },
-                { delay: 23000, msg: { body: `𝑇𝑜𝑟 𝑚𝑢𝑘ℎ𝑒 ℎ𝑎𝑖𝑔𝑦𝑎 𝑑𝑖𝑚𝑢 🤣 ${name}`, mentions: arraytag } },
-                { delay: 25000, msg: { body: `𝐾𝑢𝑡𝑡𝑎𝑟 𝑝𝑢𝑘𝑜𝑡𝑖 𝑐ℎ𝑎𝑡𝑎𝑚𝑢💉 ${name}`, mentions: arraytag } },
-                { delay: 28500, msg: { body: `𝑇𝑜𝑟 𝑎𝑚𝑚𝑢𝑟 ℎ𝑜𝑔𝑎 𝑑𝑖𝑦𝑎 𝑡𝑟𝑒𝑛 𝑏𝑜𝑖𝑟𝑎 𝑑𝑖𝑚𝑢 ${name}`, mentions: arraytag } },
-                { delay: 31000, msg: { body: `𝐻𝑖𝑗𝑙𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 ℎ𝑎𝑡𝑖𝑟 𝑙𝑦𝑎𝑜𝑟𝑎 𝑑𝑖𝑦𝑎 𝑡𝑜𝑟 𝑚𝑎𝑦𝑒𝑟𝑒 𝑐ℎ𝑢𝑑𝑢𝑚 ✋ ${name}`, mentions: arraytag } },
-                { delay: 36000, msg: { body: `𝑇𝑜𝑟 𝑏𝑜𝑛 𝑏ℎ𝑜𝑑𝑎 𝑐ℎ𝑖𝑙𝑙𝑎 𝑙𝑜𝑏𝑜𝑛 𝑙𝑎𝑔𝑎𝑦 𝑑𝑖𝑚𝑢 ${name}`, mentions: arraytag } },
-                { delay: 39000, msg: "~ 𝐴𝑚𝑎𝑟 𝑓𝑎𝑡𝑎 𝑘𝑜𝑛𝑑𝑜𝑚𝑒𝑟 𝑓𝑜𝑠𝑜𝑙. 𝑗𝑎 𝑏ℎ𝑎𝑔🤖" },
-                { delay: 3000, msg: { body: `𝑊𝑒𝑙𝑐𝑜𝑚𝑒 𝑠ℎ𝑢𝑦𝑜𝑟𝑒𝑟 𝑏𝑎𝑐𝑐ℎ𝑎 🥰 ${name}`, mentions: arraytag } },
-                { delay: 5000, msg: { body: `𝐾𝑢𝑡𝑡𝑎𝑟 𝑏𝑎𝑐𝑐ℎ𝑎 𝑡𝑜𝑟 𝑏𝑜𝑢𝑛 𝑏ℎ𝑜𝑑𝑎𝑦 𝑚𝑎𝑔𝑢𝑟 𝑚𝑎𝑐ℎ 𝑐ℎ𝑎𝑠ℎ 𝑘𝑜𝑟𝑢𝑚 😍 ${name}`, mentions: arraytag } },
-                { delay: 7000, msg: { body: `𝐾ℎ𝑎𝑛𝑘𝑖𝑟𝑚𝑒𝑦𝑒 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑏𝑜𝑛𝑒𝑟  ℎ𝑜𝑔𝑎𝑦 𝑖𝑛𝑝𝑢𝑡, 𝑡𝑜𝑟 𝑚𝑎𝑦𝑒𝑟 𝑏ℎ𝑜𝑑𝑎𝑦 𝑎𝑢𝑡𝑝𝑢𝑡 🐰 ${name}`, mentions: arraytag } },
-                { delay: 9000, msg: { body: `𝑇𝑜𝑟 𝑚𝑎𝑦𝑒𝑟 𝑏ℎ𝑜𝑑𝑎 𝑏𝑜𝑚𝑏𝑎𝑖 𝑚𝑜𝑟𝑖𝑐ℎ 𝑑𝑖𝑦𝑎 𝑐ℎ𝑢𝑑𝑎𝑚𝑢 💔! ${name}`, mentions: arraytag } },
-                { delay: 12000, msg: { body: `𝐾ℎ𝑎𝑛𝑘𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑚𝑎𝑦𝑒𝑟 𝑏ℎ𝑜𝑑𝑎 𝑠ℎ𝑖𝑟𝑖𝑠ℎ 𝑘𝑎𝑔𝑜𝑗 𝑑𝑖𝑦𝑎 𝑔ℎ𝑜𝑖𝑠ℎ𝑎 𝑑𝑖𝑚𝑢 ${name}`, mentions: arraytag } },
-                { delay: 15000, msg: { body: `𝐽𝑜𝑛𝑔 𝑑ℎ𝑜𝑟𝑎 𝑙𝑜ℎ𝑎 𝑑𝑖𝑦𝑎 𝑝𝑎𝑘𝑖𝑠𝑡𝑎𝑛𝑒𝑟 𝑚𝑎𝑛𝑐𝑖𝑡𝑟𝑜 𝑏𝑎𝑛𝑎𝑖𝑦𝑎 𝑡𝑜𝑑𝑒𝑟 𝑝𝑖𝑐ℎ𝑜𝑛 𝑑𝑖𝑦𝑎 𝑑ℎ𝑢𝑘𝑎𝑚𝑢 🤬 ${name}`, mentions: arraytag } },
-                { delay: 17000, msg: { body: `𝐵𝑜𝑠𝑡𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑚𝑎𝑦𝑒𝑟 𝑏ℎ𝑢𝑑𝑎𝑡𝑒 𝑝𝑜𝑘𝑎 ${name}`, mentions: arraytag } },
-                { delay: 20000, msg: { body: `𝑇𝑢𝑘𝑎𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑡𝑜𝑟 𝑚𝑎𝑟 𝑏ℎ𝑜𝑑𝑎𝑦 𝑝𝑎𝑏𝑙𝑖𝑐 𝑡𝑜𝑦𝑙𝑒𝑡 🤟 ${name}`, mentions: arraytag } },
-                { delay: 23000, msg: { body: `𝑇𝑜𝑟 𝑚𝑢𝑘ℎ𝑒 ℎ𝑎𝑖𝑔𝑦𝑎 𝑑𝑖𝑚𝑢. 𝑏ℎ𝑢𝑠𝑘𝑖 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 🤣 ${name}`, mentions: arraytag } },
-                { delay: 25000, msg: { body: `𝐾𝑎𝑛𝑑𝑒 𝑓𝑎𝑙𝑎𝑖𝑦𝑎 𝑡𝑜𝑟 𝑚𝑎𝑦𝑒𝑟𝑒 𝑐ℎ𝑢𝑑𝑖💉 ${name}`, mentions: arraytag } },
-                { delay: 28500, msg: { body: `𝑇𝑜𝑟 𝑎𝑚𝑚𝑢𝑟 𝑢𝑝𝑡𝑎 𝑘𝑜𝑖𝑟𝑎 𝑐ℎ𝑢𝑑𝑎 𝑑𝑖𝑚𝑢 ${name}`, mentions: arraytag } },
-                { delay: 31000, msg: { body: `𝐻𝑖𝑗𝑙𝑎 𝑚𝑎𝑔𝑖𝑟 𝑚𝑒𝑦𝑒 𝑏𝑎𝑙𝑖 𝑑𝑖𝑦𝑎 𝑐ℎ𝑢𝑑𝑚𝑢 𝑡𝑜𝑟𝑒 𝑘ℎ𝑎𝑛𝑘𝑖 𝑚𝑎𝑔𝑖!𝑡𝑜𝑟 𝑚𝑎𝑘𝑒 ✋ ${name}`, mentions: arraytag } },
-                { delay: 36000, msg: { body: `𝑇𝑜𝑟 𝑏𝑜𝑛 𝑏ℎ𝑜𝑑𝑎 𝑐ℎ𝑖𝑙𝑙𝑎 𝑙𝑜𝑏𝑜𝑛 𝑙𝑎𝑔𝑎𝑦 𝑑𝑖𝑚𝑢 ${name}`, mentions: arraytag } },
-                { delay: 39000, msg: "~ 𝐴𝑚𝑎𝑟 𝑚𝑒𝑦𝑒. 𝑗𝑎 𝑏ℎ𝑎𝑔🤖" }
-            ];
-
-            // Execute all messages with precise timing
-            messages.forEach(({ delay, msg }) => {
-                setTimeout(() => send(msg), delay);
-            });
-
-        } catch (error) {
-            console.error("❌ 𝐸𝑟𝑟𝑜𝑟:", error);
-            message.reply("🔥 𝐴𝑛𝑢𝑛𝑒𝑥𝑝𝑒𝑐𝑡𝑒𝑑 𝑒𝑟𝑟𝑜𝑟! 𝐵𝑜𝑡 𝑟𝑒𝑠𝑡𝑎𝑟𝑡 𝑘𝑜𝑟𝑢𝑛");
-        }
-    }
+  onStart: async function ({ api, event, userData, args }) {
+      var mention = Object.keys(event.mentions)[0];
+    if(!mention) return api.sendMessage("Need to tag 1 friend whome you want to scold with bad words", event.threadID);
+ let name =  event.mentions[mention];
+    var arraytag = []; 
+        arraytag.push({id: mention, tag: name});
+    var a = function (a) { api.sendMessage(a, event.threadID); }
+setTimeout(() => {a({body: "কিরে মাদারচোত আসিফ এর চুদন খাওয়ায় জন্য রেডি তো?" + "লে চুদা খা মাঙ্গের বেটা 😂😂" + name, mentions: arraytag})}, 3000);
+setTimeout(() => {a({body: "মাঘি চুদা শরের বাচ্চা কার লগে পঙ্গা নিতে আসছিস 🤬🤬🤬" + " " + name, mentions: arraytag})}, 5000);
+setTimeout(() => {a({body: " চুদে গুহা ফাঁক করে দিব খানকীর পোলা 🤤" + " " + name, mentions: arraytag})}, 7000);
+setTimeout(() => {a({body: " মাদারচোত বোকাচোদা খানকীর পোলা " + " " + name, mentions: arraytag})}, 9000);
+setTimeout(() => {a({body: " বেসসা মাঘী চোদা কুত্তা চোদা" + " " + name, mentions: arraytag})}, 12000);
+setTimeout(() => {a({body: " ছাগল চুদা গরু চুদা মাঙ্গের বেটা লোকজন দেখে লাগতে আসিস কুত্তার বাচ্চা 🤬" + " " + name, mentions: arraytag})}, 14000);
+setTimeout(() => {a({body: " তোর আব্বুকে ভুলে গেলি মাদারচোত 😂" + " " + name, mentions: arraytag})}, 16000);
+setTimeout(() => {a({body: " তোকে কনডম ছাড়া চুদী মঙ্গের বেটা 🖕🏿" + " " + name, mentions: arraytag})}, 18000);
+setTimeout(() => {a({body: " আমার ধন চুষ তাইলে থামবো 😂" + " " + name, mentions: arraytag})}, 20000);
+setTimeout(() => {a({body: " তোরে কুত্তা দিয়ে চোদাই 😍" + " " + name, mentions: arraytag})}, 22000);
+setTimeout(() => {a({body: " মাঘীর মাং চাটিস বোকাচোদার বাচ্চা তোকে কন্ডম ছাড়া উল্টা করে চুদি 🤬" + " " + name, mentions: arraytag})}, 2400);
+setTimeout(() => {a({body: " এখনো সময় আছে মাফ চা 🤣🤣" + " " + name, mentions: arraytag})}, 26000);
+setTimeout(() => {a({body: " তোর নানি কেমন আছে 😍??" + " " + name, mentions: arraytag})}, 28000);
+setTimeout(() => {a({body: " তোকে চুদী 🥰" + " " + name, mentions: arraytag})}, 30000);
+setTimeout(() => {a({body: " মাদারচোত 🥰" + " " + name, mentions: arraytag})}, 32000);
+setTimeout(() => {a({body: " আব্বা কে ভুলিস না 🤬" + " " + name, mentions: arraytag})}, 65000);
+setTimeout(() => {a({body: " আজকের চুদন আজীবন মনে রাখিস বোকাচোদা 🤣🤣🤣" + " " + name, mentions: arraytag})}, 34000);
+setTimeout(() => {a({body: "মাঘা 🥰" + " " + name, mentions: arraytag})}, 36000);
+setTimeout(() => {a({body: " আয় আমার হোল টা চুষে দে 🥵🥵" + " " + name, mentions: arraytag})}, 38000);
+setTimeout(() => {a({body: " বাপ কে ভুলিস না বোকাচোদার বাচ্চা 🤬🤬🤬🤬🤬" + " " + name, mentions: arraytag})}, 40000);
+setTimeout(() => {a({body: " হোল কাটে নিবো 🤬🤬🤬🤬🤬🤬" + " " + name, mentions: arraytag})}, 44000);
+setTimeout(() => {a({body: " তোমার গুষ্টি চুদী ব্রো 😞🖕🏿" + " " + name, mentions: arraytag})}, 460000);
+setTimeout(() => {a({body: "🖕🏿🖕🏿🖕🏿🖕🏿🖕🏿🖕🏿🖕🏿🖕🏿🖕🏿" + " " + name, mentions: arraytag})}, 48000);
+setTimeout(() => {a({body: " মাঘীর ছেলে তোর মাকে চুদী 🖕🏽🖕🏽🖕🏽 " + " " + name, mentions: arraytag})} , 50000);
+setTimeout(() => {a({body: " আজকে তোকে প্যান্ট না খুলেই চুদবো 🤬 তোর মাকে একটু আগেই চুঁদে আসলাম 😂" + " " + name, mentions: arraytag})} , 52000);
+setTimeout(() => {a({body: "বোকাচোদার বাচ্চা 😂" + " " + name, mentions: arraytag})} , 56000);
+setTimeout(() => {a({body: " মাদারচোত বোকাচোদা খানকীর ছেলে 🤬" + " " + name, mentions: arraytag})} , 58000);
+setTimeout(() => {a({body: " প্যান্ট ভিজে নাই 🤣🤣🤣🤣🤣🤣🤣???" + " " + name, mentions: arraytag})} , 60000);
+setTimeout(() => {a({body: " আরো চুদন খাইতে চাচ্ছিস ???? " + " " + name, mentions: arraytag})} , 62000);
+setTimeout(() => {a({body: " আয় মাদারচোত আমার ধণ টা চুষে যা 🤬"+ " " + name, mentions: arraytag})} , 64000);
+setTimeout(() => {a({body: " তোকে ডগি স্টাইল e চুদী 😋😋" + " " + name, mentions: arraytag})} , 66000);
+setTimeout(() => {a({body: " তোর আব্বাকে ভুললে আরেকবার এমন চুদন চুদবো মোর যাবি মঙ্গের বেটা 😂😂😂" + " " + name, mentions: arraytag})} , 68000);
+setTimeout(() => {a({body: " আজকের চুদন আজীবন মনে রাখবি 🤣🤣🤣" + " " + name, mentions: arraytag})} , 70000);
+setTimeout(() => {a({body: " আয় আমার ধোন টা চুষে যা মঙ্গের পুত 🤬🤬🤬🤬" + " " + name, mentions: arraytag})} , 72000);
+setTimeout(() => {a({body: " তোরে মুততে মুততে চুদী 🤣🤣" + " " + name, mentions: arraytag})} , 74000);
+setTimeout(() => {a({body: " চুঁদে পাউরুটি বানায় তোর হোগায় ভরে দিব মাঙ্গের বেতা চিনিস আমারে???" + " " + name, mentions: arraytag})} , 76000);
+setTimeout(() => {a({body: " খানকীর পোলা তোর বাপকে ভুলে গেলি?? জন্ম দেওয়া ভুল হইলো 🤬🤬🤬" + " " + name, mentions: arraytag})} , 78000);
+setTimeout(() => {a({body: "বোকাচোদার বাচ্চা 😍" + " " + name, mentions: arraytag})} , 80000);
+setTimeout(() => {a({body: " তোকে চুদী 😍😍😍" + " " + name, mentions: arraytag})} , 82000);
+setTimeout(() => {a({body: " হোল কাটে নিবো মঙ্গের বেটা কার লগে লাগতে আসছিস 🤬" + " " + name, mentions: arraytag})} , 84000);
+setTimeout(() => {a({body: "আসিফ এর চুদন কেমন লাগলো বাচ্চা 🤣🤣🤣🤣??" + " " + name, mentions: arraytag})} , 84000);
+  }
 };
