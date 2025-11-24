@@ -6,7 +6,6 @@ var log = require("npmlog");
 var AuthManager = require("./src/AuthManager");
 
 log.maxRecordSize = 100;
-var checkVerified = null;
 
 function setOptions(globalOptions, options) {
     Object.keys(options).map(function (key) {
@@ -61,17 +60,14 @@ function buildAPI(globalOptions, html, jar) {
     var userID = maybeCookie[0].cookieString().split("=")[1].toString();
     log.info("login", `Logged in as ${userID}`);
 
-    // Attempt to parse fb_dtsg
     let fb_dtsg = null;
     let irisSeqID = null;
 
     try {
         const $ = cheerio.load(html);
-        // Method 1: Input field
         const dtsgInput = $('input[name="fb_dtsg"]').val();
         if(dtsgInput) fb_dtsg = dtsgInput;
 
-        // Method 2: Scripts
         if(!fb_dtsg) {
             $('script').each((i, script) => {
                 const content = $(script).html();
@@ -82,7 +78,6 @@ function buildAPI(globalOptions, html, jar) {
             });
         }
         
-        // IRIS Seq ID
         const seqMatch = html.match(/"irisSeqID":"([^"]+)"/);
         if (seqMatch) irisSeqID = seqMatch[1];
 
@@ -91,8 +86,6 @@ function buildAPI(globalOptions, html, jar) {
     }
 
     var clientID = (Math.random() * 2147483648 | 0).toString(16);
-
-    // Default MQTT endpoint
     let mqttEndpoint = "wss://edge-chat.facebook.com/chat?region=prn"; 
     let region = "prn";
 
@@ -122,7 +115,6 @@ function buildAPI(globalOptions, html, jar) {
 
     const defaultFuncs = utils.makeDefaults(html, userID, ctx);
 
-    // Load all src files
     require('fs').readdirSync(__dirname + '/src/').forEach(function (file) {
         if (file.endsWith('.js') && file !== 'AuthManager.js') {
             var fileName = file.replace(/\.js$/, '');
@@ -133,7 +125,6 @@ function buildAPI(globalOptions, html, jar) {
     return { ctx, defaultFuncs, api };
 }
 
-// MAIN LOGIN FUNCTION
 function login(loginData, options, callback) {
     var globalOptions = {
         selfListen: false,
@@ -167,41 +158,46 @@ function login(loginData, options, callback) {
         callback = prCallback;
     }
 
-    // Initialize AuthManager
-    // We assume loginData contains { email, password, appStatePath } or just appState
-    // If using goatbot style, appStatePath usually 'appstate.json'
     const appStatePath = loginData.appStatePath || "appstate.json";
     const authManager = new AuthManager(loginData.email, loginData.password, appStatePath);
 
     async function executeLogin() {
         try {
-            // 1. Get Valid AppState (either from file or via Playwright)
-            const appState = await authManager.getAppState(globalOptions.forceLogin);
+            let appState;
+
+            // PRIORITY 1: Use provided AppState (from account.txt)
+            if (loginData.appState && loginData.appState.length > 0) {
+                // log.info("login", "Using Cookie from account.txt");
+                appState = loginData.appState;
+            } else {
+                // PRIORITY 2: Load from appstate.json or Login via Playwright
+                appState = await authManager.getAppState(globalOptions.forceLogin);
+            }
             
-            // 2. Create Jar
             const jar = utils.getJar();
             appState.map(c => {
                 const str = `${c.key}=${c.value}; expires=${c.expires}; domain=${c.domain}; path=${c.path};`;
                 jar.setCookie(str, "https://" + c.domain);
             });
 
-            // 3. Main Page Load to verify cookies & get fb_dtsg
-            log.info("login", "Connecting to Facebook...");
+            // Verify Login
             const res = await utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true });
             const html = res.body;
 
-            // 4. Check if redirected to login (Cookie invalid)
             if (html.includes('id="login_form"') || html.includes('name="login"')) {
-                log.warn("login", "Cookies invalid. Refreshing via Playwright...");
-                // Force refresh
-                fs.unlinkSync(appStatePath); 
-                return executeLogin(); // Recursive call to trigger login
+                // If cookie is dead AND we have email/pass, try auto-login
+                if (loginData.email && loginData.password) {
+                    log.warn("login", "Cookie invalid. Attempting auto-login...");
+                    return await authManager.performLogin()
+                        .then(freshAppState => {
+                            loginData.appState = freshAppState; 
+                            return executeLogin(); 
+                        });
+                }
+                throw { error: "Not logged in. Cookie is invalid and no Email/Password provided in config.json." };
             }
 
-            // 5. Build API
             var apiObj = buildAPI(globalOptions, html, jar);
-            
-            // 6. Return
             return callback(null, apiObj.api);
 
         } catch (e) {
