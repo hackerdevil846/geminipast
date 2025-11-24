@@ -36,6 +36,7 @@
     "gradient-string": "^2.0.2",
     "graphql-query-to-json": "^2.0.1",
     "https": "^1.0.0",
+    "https-proxy-agent": "^5.0.1",
     "image-downloader": "^4.3.0",
     "jimp": "^0.16.13",
     "jsonlint-mod": "^1.7.6",
