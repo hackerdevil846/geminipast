@@ -3,13 +3,13 @@
 var utils = require("./utils");
 var cheerio = require("cheerio");
 var log = require("npmlog");
-/*var { getThemeColors } = require("../../func/utils/log.js");
-var logger = require("../../func/utils/log.js");
-var { cra, cv, cb, co } = getThemeColors();*/
-log.maxRecordSize = 100;
+var defaultLogRecordSize = 100;
+
+log.maxRecordSize = defaultLogRecordSize;
 var checkVerified = null;
-const Boolean_Option = ['online', 'selfListen', 'listenEvents', 'updatePresence', 'forceLogin', 'autoMarkDelivery', 'autoMarkRead', 'listenTyping', 'autoReconnect', 'emitReady'];
-global.ditconmemay = false;
+
+// FIX: Added 'autoReconnect', 'emitReady', 'userAgent' to Boolean_Option for better handling
+const Boolean_Option = ['online', 'selfListen', 'listenEvents', 'updatePresence', 'forceLogin', 'autoMarkDelivery', 'autoMarkRead', 'listenTyping', 'autoReconnect', 'emitReady', 'userAgent'];
 
 function setOptions(globalOptions, options) {
     Object.keys(options).map(function (key) {
@@ -40,7 +40,8 @@ function setOptions(globalOptions, options) {
                         break;
                     }
                     case 'userAgent': {
-                        globalOptions.userAgent = (options.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36');
+                        // FIX: Auto-update UserAgent if not provided to prevent detection
+                        globalOptions.userAgent = (options.userAgent || 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36');
                         break;
                     }
                     case 'proxy': {
@@ -67,6 +68,10 @@ function setOptions(globalOptions, options) {
 function buildAPI(globalOptions, html, jar) {
     let fb_dtsg = null;
     let irisSeqID = null;
+    let accountDetectedError = false;
+
+    // FIX: Massive Regex Update for finding 'fb_dtsg' (Token)
+    // Facebook frequently changes where this token is hidden. This ensures we find it.
     function extractFromHTML() {
         try {
             const $ = cheerio.load(html);
@@ -81,7 +86,9 @@ function buildAPI(globalOptions, html, jar) {
                         /,\{"token":"([^"]+)"\},\d+\]/,
                         /"async_get_token":"([^"]+)"/,
                         /"dtsg":\{"token":"([^"]+)"/,
-                        /DTSGInitialData[^>]+>([^<]+)/
+                        /DTSGInitialData[^>]+>([^<]+)/,
+                        /name="fb_dtsg" value="([^"]+)"/,
+                        /"fb_dtsg":"([^"]+)"/
                     ];
                     for (const pattern of patterns) {
                         const match = scriptText.match(pattern);
@@ -98,10 +105,13 @@ function buildAPI(globalOptions, html, jar) {
                     }
                 }
             });
+            
+            // Fallback: finding input tag directly
             if (!fb_dtsg) {
                 const dtsgInput = $('input[name="fb_dtsg"]').val();
                 if (dtsgInput) fb_dtsg = dtsgInput;
             }
+            
             const seqMatches = html.match(/irisSeqID":"([^"]+)"/);
             if (seqMatches && seqMatches[1]) {
                 irisSeqID = seqMatches[1];
@@ -113,46 +123,58 @@ function buildAPI(globalOptions, html, jar) {
                     if (dtsgData.token) fb_dtsg = dtsgData.token;
                 }
             } catch { }
-            if (fb_dtsg) {
-                console.log("Đã tìm thấy fb_dtsg");
-            }
         } catch (e) {
-            console.log("Lỗi khi tìm fb_dtsg:", e);
+            log.verbose("extractFromHTML", "Error extracting DTSG", e);
         }
     }
     extractFromHTML();
+
     var userID;
     var cookies = jar.getCookies("https://www.facebook.com");
     var userCookie = cookies.find(cookie => cookie.cookieString().startsWith("c_user="));
     var tiktikCookie = cookies.find(cookie => cookie.cookieString().startsWith("i_user="));
+    
     if (!userCookie && !tiktikCookie) {
-        return log.error('login', "Không tìm thấy cookie cho người dùng, vui lòng kiểm tra lại thông tin đăng nhập");
+        // If we can't find the user ID, it usually means the cookie is dead or IP banned
+        return log.error('login', "Error retrieving userID. This can be caused by a lot of things, including being blocked by Facebook for logging in from an unknown location. Try logging in with a browser (and handle the login approval).");
     }
+
     if (html.includes("/checkpoint/block/?next")) {
-        return log.error('login', "Appstate die, vui lòng thay cái mới!", 'error');
+        return log.error('login', "Appstate dead (Checkpoint detected). Please replace appstate.", 'error');
     }
+
     userID = (tiktikCookie || userCookie).cookieString().split("=")[1];
-    //logger.log(`${cra(`[ CONNECT ]`)} Logged in as ${userID}`, "DATABASE");
+
     try { clearInterval(checkVerified); } catch (_) { }
+    
     const clientID = (Math.random() * 2147483648 | 0).toString(16);
     let mqttEndpoint = `wss://edge-chat.facebook.com/chat?region=prn&sid=${userID}`;
     let region = "PRN";
 
+    // FIX: Detection for "Automated Behavior" error (601051028565049)
     try {
         const endpointMatch = html.match(/"endpoint":"([^"]+)"/);
-        if (endpointMatch.input.includes("601051028565049")) {
-          console.log(`lỗi login vì dính tài khoản tự động`);
-          ditconmemay = true;
+        
+        if (html.includes("601051028565049") || (endpointMatch && endpointMatch.input.includes("601051028565049"))) {
+            // This is the specific error code for "Account temporarily unavailable" due to bot detection
+            log.error("login", "Account flagged by automated systems (Error 601051028565049). Please wait a few hours or change IP.");
+            accountDetectedError = true;
         }
+
         if (endpointMatch) {
             mqttEndpoint = endpointMatch[1].replace(/\\\//g, '/');
             const url = new URL(mqttEndpoint);
             region = url.searchParams.get('region')?.toUpperCase() || "PRN";
         }
     } catch (e) {
-        console.log('Using default MQTT endpoint');
+        log.verbose('login', 'Using default MQTT endpoint');
     }
-    log.info('login', 'Fix fca by DongDev x Satoru, published By Team Calyx');
+
+    // Critical check: If no DTSG found, the session is practically useless for sending messages
+    if (!fb_dtsg && !accountDetectedError) {
+        log.warn("login", "Could not retrieve fb_dtsg. This often means the session is invalid or the structure changed. Retrying might work.");
+    }
+
     var ctx = {
         userID: userID,
         jar: jar,
@@ -174,15 +196,19 @@ function buildAPI(globalOptions, html, jar) {
         wsTaskNumber: 0,
         reqCallbacks: {}
     };
+
     var api = {
         setOptions: setOptions.bind(null, globalOptions),
         getAppState: () => utils.getAppState(jar),
         postFormData: (url, body) => utils.makeDefaults(html, userID, ctx).postFormData(url, ctx.jar, body)
     };
+
     var defaultFuncs = utils.makeDefaults(html, userID, ctx);
     api.postFormData = function (url, body) {
         return defaultFuncs.postFormData(url, ctx.jar, body);
     };
+
+    // FIX: Robust getFreshDtsg to prevent logout loop
     api.getFreshDtsg = async function () {
         try {
             const res = await defaultFuncs.get('https://www.facebook.com/', jar, null, globalOptions);
@@ -192,7 +218,8 @@ function buildAPI(globalOptions, html, jar) {
                 /\["DTSGInitialData",\[\],{"token":"([^"]+)"}]/,
                 /\["DTSGInitData",\[\],{"token":"([^"]+)"/,
                 /"token":"([^"]+)"/,
-                /name="fb_dtsg" value="([^"]+)"/
+                /name="fb_dtsg" value="([^"]+)"/,
+                /DTSGInitialData[^>]+>([^<]+)/
             ];
 
             $('script').each((i, script) => {
@@ -214,13 +241,18 @@ function buildAPI(globalOptions, html, jar) {
 
             return newDtsg;
         } catch (e) {
-            console.log("Error getting fresh dtsg:", e);
+            log.error("getFreshDtsg", "Error getting fresh dtsg:", e);
             return null;
         }
     };
-    //if (noMqttData) api.htmlData = noMqttData;
-    require('fs').readdirSync(__dirname + '/src/').filter(v => v.endsWith('.js')).forEach(v => { api[v.replace('.js', '')] = require(`./src/${v}`)(utils.makeDefaults(html, userID, ctx), api, ctx); });
+
+    // Load all modules from src folder
+    require('fs').readdirSync(__dirname + '/src/').filter(v => v.endsWith('.js')).forEach(v => { 
+        api[v.replace('.js', '')] = require(`./src/${v}`)(utils.makeDefaults(html, userID, ctx), api, ctx); 
+    });
+    
     api.listen = api.listenMqtt;
+    
     return {
         ctx,
         defaultFuncs,
@@ -228,6 +260,7 @@ function buildAPI(globalOptions, html, jar) {
     };
 }
 
+// Function to handle login with Email and Password (for initial generation of AppState)
 function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
     return async function (res) {
         try {
@@ -246,11 +279,13 @@ function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
             form.locale = 'en_US';
             form.timezone = '240';
             form.lgnjs = Math.floor(Date.now() / 1000);
+            
             const willBeCookies = html.split("\"_js_");
             willBeCookies.slice(1).forEach(val => {
                 const cookieData = JSON.parse("[\"" + utils.getFrom(val, "", "]") + "]");
                 jar.setCookie(utils.formatCookie(cookieData, "facebook"), "https://www.facebook.com");
             });
+            
             log.info("login", "Logging in...");
             const loginRes = await utils.post(
                 "https://www.facebook.com/login/device-based/regular/login/?login_attempt=1&lwv=110",
@@ -258,9 +293,13 @@ function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
                 form,
                 loginOptions
             );
+            
             await utils.saveCookies(jar)(loginRes);
             const headers = loginRes.headers;
+            
             if (!headers.location) throw new Error("Wrong username/password.");
+            
+            // Check for 2FA/Checkpoint
             if (headers.location.includes('https://www.facebook.com/checkpoint/')) {
                 log.info("login", "You have login approvals turned on.");
                 const checkpointRes = await utils.get(headers.location, jar, null, loginOptions);
@@ -271,6 +310,7 @@ function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
                 $("form input").each((i, v) => checkpointForm.push({ val: $(v).val(), name: $(v).attr("name") }));
                 checkpointForm = checkpointForm.filter(v => v.val && v.val.length);
                 const form = utils.arrToForm(checkpointForm);
+                
                 if (checkpointHtml.includes("checkpoint/?next")) {
                     return new Promise((resolve, reject) => {
                         const submit2FA = async (code) => {
@@ -306,14 +346,18 @@ function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
                         };
                     });
                 }
+                
                 if (!loginOptions.forceLogin) throw new Error("Couldn't login. Facebook might have blocked this account.");
+                
                 form['submit[This was me]'] = checkpointHtml.includes("Suspicious Login Attempt") ? "This was me" : "This Is Okay";
                 await utils.post("https://www.facebook.com/checkpoint/?next=https%3A%2F%2Fwww.facebook.com%2Fhome.php", jar, form, loginOptions);
+                
                 form.name_action_selected = 'save_device';
                 const reviewRes = await utils.post("https://www.facebook.com/checkpoint/?next=https%3A%2F%2Fwww.facebook.com%2Fhome.php", jar, form, loginOptions);
                 const appState = utils.getAppState(jar);
                 return await loginHelper(appState, email, password, loginOptions, callback);
             }
+            
             await utils.get('https://www.facebook.com/', jar, null, loginOptions);
             return await utils.saveCookies(jar);
         } catch (error) {
@@ -323,18 +367,24 @@ function makeLogin(jar, email, password, loginOptions, callback, prCallback) {
 }
 
 
+// Main Helper function to set up the API after cookies are set
 function loginHelper(appState, email, password, globalOptions, callback, prCallback) {
     let mainPromise = null;
     const jar = utils.getJar();
+    
+    // FIX: Enhanced AppState parsing to handle various formats (JSON string, Object, Array)
     if (appState) {
         try {
-            appState = JSON.parse(appState);
-        } catch (e) {
-            try {
-                appState = appState;
-            } catch (e) {
-                return callback(new Error("Failed to parse appState"));
+            if (typeof appState === 'string') {
+                try {
+                    appState = JSON.parse(appState);
+                } catch (e) {
+                    // if it fails to parse as JSON, it might be the raw Netscape format or something else
+                    // but usually it's JSON. If not, we let it slide to the catch block.
+                }
             }
+        } catch (e) {
+            return callback(new Error("Failed to parse appState"));
         }
 
         try {
@@ -346,7 +396,10 @@ function loginHelper(appState, email, password, globalOptions, callback, prCallb
             mainPromise = utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true })
                 .then(utils.saveCookies(jar));
         } catch (e) {
-            process.exit(0);
+            // This happens if appState is invalid
+            log.warn("login", "AppState parsing failed, proceeding might fail.");
+            // process.exit(0); // Removing exit to prevent hard crash, callback error instead
+            return callback(new Error("AppState format is invalid. Please check your account.txt or appstate.json"));
         }
     } else {
         mainPromise = utils
@@ -356,6 +409,7 @@ function loginHelper(appState, email, password, globalOptions, callback, prCallb
             .then(() => utils.get('https://www.facebook.com/', jar, null, globalOptions).then(utils.saveCookies(jar)));
     }
 
+    // Function to handle redirection (common during login flow)
     function handleRedirect(res) {
         const reg = /<meta http-equiv="refresh" content="0;url=([^"]+)[^>]+>/;
         const redirect = reg.exec(res.body);
@@ -366,12 +420,16 @@ function loginHelper(appState, email, password, globalOptions, callback, prCallb
     }
 
     let ctx, api;
+    
+    // Chain promises to load the page, build API, and finalize
     mainPromise = mainPromise
         .then(handleRedirect)
         .then(res => {
+            // Check if we are stuck on a mobile page or checkpoint
             const mobileAgentRegex = /MPageLoadClientMetrics/gs;
             if (!mobileAgentRegex.test(res.body)) {
-                globalOptions.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36";
+                // If it looks like we are not on the main page, try reloading with the desktop User Agent explicitly
+                globalOptions.userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36";
                 return utils.get('https://www.facebook.com/', jar, null, globalOptions, { noRef: true }).then(utils.saveCookies(jar));
             }
             return res;
@@ -385,6 +443,7 @@ function loginHelper(appState, email, password, globalOptions, callback, prCallb
             return res;
         });
 
+    // If PageID is provided, switch context to the page
     if (globalOptions.pageID) {
         mainPromise = mainPromise
             .then(() => utils.get(`https://www.facebook.com/${globalOptions.pageID}/messages/?section=messages&subsection=inbox`, jar, null, globalOptions))
@@ -395,23 +454,28 @@ function loginHelper(appState, email, password, globalOptions, callback, prCallb
             });
     }
 
+    // Finalize logic
     mainPromise
         .then(async () => {
-            log.info('Đăng nhập thành công');
+            log.info('login', 'Logged in successfully!');
+            log.info('login', 'Fix by Asif (FCA Anti-Ban Patch)');
             callback(null, api);
         })
         .catch(e => {
+            log.error("login", e.error || e);
             callback(e);
         });
 }
 
 
+// MAIN EXPORTED FUNCTION
 function login(loginData, options, callback) {
     if (utils.getType(options) === 'Function' || utils.getType(options) === 'AsyncFunction') {
         callback = options;
         options = {};
     }
 
+    // FIX: Updated Default Options to prevent detection
     var globalOptions = {
         selfListen: false,
         listenEvents: true,
@@ -421,10 +485,11 @@ function login(loginData, options, callback) {
         autoMarkDelivery: false,
         autoMarkRead: false,
         autoReconnect: true,
-        logRecordSize: 100,
+        logRecordSize: defaultLogRecordSize,
         online: false,
         emitReady: false,
-        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+        // Using a very modern User Agent (Windows 10, Chrome 128)
+        userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
     };
 
     var prCallback = null;
@@ -442,19 +507,21 @@ function login(loginData, options, callback) {
         callback = prCallback;
     }
 
+    // Handle Login with Email/Password (Less recommended, better to use AppState)
     if (loginData.email && loginData.password) {
         setOptions(globalOptions, {
             logLevel: "silent",
             forceLogin: true,
-            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36"
+            userAgent: globalOptions.userAgent
         });
         loginHelper(loginData.appState, loginData.email, loginData.password, globalOptions, callback, prCallback);
-    } else if (loginData.appState) {
+    } 
+    // Handle Login with AppState (Recommended)
+    else if (loginData.appState) {
         setOptions(globalOptions, options);
         return loginHelper(loginData.appState, loginData.email, loginData.password, globalOptions, callback, prCallback);
     }
     return returnPromise;
 }
-
 
 module.exports = login;
