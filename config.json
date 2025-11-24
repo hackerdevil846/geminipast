@@ -12,28 +12,28 @@
   "antiInbox": false,
   "language": "en",
   "notesLanguage": "change to your language with ISO 639-1 code, available languages: vi (Vietnamese), en (English)",
-  "nickNameBot": "গেসুকে 😈",
+  "nickNameBot": "𝑯𝒂𝒏𝒊𝒂 𓆩🖤𓆪",
   "prefix": "^",
   "adminOnly": {
     "enable": false,
     "ignoreCommand": []
   },
   "adminBot": [
-    "100083039411474"
+    "61571630409265"
   ],
   "premiumUsers": [
-    "100083039411474"
+    "61571630409265"
   ],
   "devUsers": [
-    "100083039411474"
+    "61571630409265"
   ],
   "notes_premiumUsers": "List of user IDs with premium access (role 3)",
   "notes_devUsers": "List of developer IDs with full access (role 4)",
   "whiteListMode": {
     "enable": true,
     "whiteListIds": [
-      "100083039411474",
-      "61577632319942"
+      "61571630409265",
+      ""
     ],
     "notes": "if you enable this feature, only the ids in the whiteListIds list can use the bot"
   },
