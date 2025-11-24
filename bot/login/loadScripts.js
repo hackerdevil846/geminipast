@@ -2,9 +2,7 @@ const { readdirSync, readFileSync, writeFileSync, existsSync } = require("fs-ext
 const path = require("path");
 const exec = (cmd, options) => new Promise((resolve, reject) => {
     require("child_process").exec(cmd, options, (err, stdout, stderr) => {
-        if (err) {
-            return reject(err);
-        }
+        if (err) return reject(err);
         resolve(stdout);
     });
 });
@@ -17,10 +15,17 @@ const packageAlready = [];
 const spinner = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 let count = 0;
 
-module.exports = async function (api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData, createLine) {
-    try {
-        /* { CHECK ORIGIN CODE } */
+function createLine(content) {
+    const width = process.stdout.columns || 50;
+    if (!content) return Array(width).fill("─").join("");
+    content = ` ${content.trim()} `;
+    const left = Math.floor((width - content.length) / 2);
+    const line = Array(Math.max(0, left)).fill("─").join("");
+    return line + content + line;
+}
 
+module.exports = async function (api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData) {
+    try {
         const aliasesData = await globalData.get('setalias', 'data', []);
         if (aliasesData && Array.isArray(aliasesData)) {
             for (const data of aliasesData) {
@@ -28,7 +33,7 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                 if (aliases && Array.isArray(aliases)) {
                     for (const alias of aliases) {
                         if (GoatBot.aliases.has(alias)) {
-                            log.warn('ALIAS', `Alias "${alias}" already exists in command "${commandName}"`);
+                            // Silent warning for cleaner startup
                         } else {
                             GoatBot.aliases.set(alias, commandName);
                         }
@@ -41,36 +46,32 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
         let text, setMap, typeEnvCommand;
 
         for (const folderModules of folders) {
-            const makeColor = folderModules == "cmds" ?
-                createLine("ASIF LOAD COMMANDS") :
-                createLine("ASIF LOAD COMMANDS EVENT");
-            console.log(colors.hex("#f5ab00")(makeColor));
+            const title = folderModules == "cmds" ? "COMMANDS LOADER" : "EVENTS LOADER";
+            console.log(colors.hex("#f5ab00")(createLine(title)));
 
             if (folderModules == "cmds") {
                 text = "command";
                 typeEnvCommand = "envCommands";
                 setMap = "commands";
-            } else if (folderModules == "events") {
-                text = "event command";
+            } else {
+                text = "event";
                 typeEnvCommand = "envEvents";
                 setMap = "eventCommands";
             }
 
             const fullPathModules = path.normalize(process.cwd() + `/scripts/${folderModules}`);
             
-            // Check if directory exists
             if (!existsSync(fullPathModules)) {
-                log.warn('LOADER', `Directory ${fullPathModules} does not exist`);
+                log.warn('LOADER', `Directory ${fullPathModules} not found. Skipping...`);
                 continue;
             }
 
-            const Files = readdirSync(fullPathModules)
-                .filter(file =>
-                    file.endsWith(".js") &&
-                    !file.endsWith("eg.js") &&
-                    (process.env.NODE_ENV == "development" ? true : !file.match(/(dev)\.js$/g)) &&
-                    !configCommands[folderModules == "cmds" ? "commandUnload" : "commandEventUnload"]?.includes(file)
-                );
+            const Files = readdirSync(fullPathModules).filter(file =>
+                file.endsWith(".js") &&
+                !file.endsWith("eg.js") &&
+                (process.env.NODE_ENV == "development" ? true : !file.match(/(dev)\.js$/g)) &&
+                !configCommands[folderModules == "cmds" ? "commandUnload" : "commandEventUnload"]?.includes(file)
+            );
 
             const commandError = [];
             let commandLoadSuccess = 0;
@@ -84,225 +85,129 @@ module.exports = async function (api, threadModel, userModel, dashBoardModel, gl
                     
                     if (allPackage) {
                         allPackage = allPackage.map(p => p.match(/[`'"]([^`'"]+)[`'"]/)[1])
-                            .filter(p => p.indexOf("/") !== 0 && p.indexOf("./") !== 0 && p.indexOf("../") !== 0 && p.indexOf(__dirname) !== 0);
+                            .filter(p => !p.startsWith("/") && !p.startsWith("./") && !p.startsWith("../"));
                         
                         for (let packageName of allPackage) {
-                            if (packageName.startsWith('@')) {
-                                packageName = packageName.split('/').slice(0, 2).join('/');
-                            } else {
-                                packageName = packageName.split('/')[0];
-                            }
+                            packageName = packageName.startsWith('@') ? packageName.split('/').slice(0, 2).join('/') : packageName.split('/')[0];
 
                             if (!packageAlready.includes(packageName)) {
                                 packageAlready.push(packageName);
-                                if (!existsSync(`${process.cwd()}/node_modules/${packageName}`)) {
+                                const modulePath = `${process.cwd()}/node_modules/${packageName}`;
+                                
+                                if (!existsSync(modulePath)) {
                                     const waiting = setInterval(() => {
                                         process.stderr.write('\r\x1b[K');
-                                        process.stderr.write(`${spinner[count % spinner.length]} Installing package ${colors.yellow(packageName)} for ${text} ${colors.yellow(file)}`);
-                                        count++;
+                                        process.stderr.write(`${spinner[count++ % spinner.length]} Installing ${colors.yellow(packageName)} for ${file}...`);
                                     }, 80);
                                     
                                     try {
-                                        await exec(`npm install ${packageName} --${pathCommand.endsWith('.dev.js') ? 'no-save' : 'save'}`, {
-                                            cwd: process.cwd(),
-                                            stdio: 'pipe'
-                                        });
+                                        await exec(`npm install ${packageName} --no-save`, { cwd: process.cwd() });
                                         clearInterval(waiting);
                                         process.stderr.write('\r\x1b[K');
-                                        console.log(`${colors.green('✔')} Installed package ${packageName} successfully`);
+                                        log.info('PACKAGE', `Installed ${packageName} successfully`);
                                     } catch (err) {
                                         clearInterval(waiting);
                                         process.stderr.write('\r\x1b[K');
-                                        console.log(`${colors.red('✖')} Failed to install package ${packageName}`);
-                                        log.warn('PACKAGE', `Package ${packageName} installation failed: ${err.message}`);
+                                        log.warn('PACKAGE', `Failed to install ${packageName}: ${err.message}`);
                                     }
                                 }
                             }
                         }
                     }
 
-                    // —————————————— CHECK CONTENT SCRIPT —————————————— //
-                    if (!global.temp.contentScripts) {
-                        global.temp.contentScripts = { cmds: {}, events: {} };
-                    }
-                    if (!global.temp.contentScripts[folderModules]) {
-                        global.temp.contentScripts[folderModules] = {};
-                    }
+                    // —————————————— LOAD SCRIPT —————————————— //
+                    if (!global.temp.contentScripts) global.temp.contentScripts = { cmds: {}, events: {} };
+                    if (!global.temp.contentScripts[folderModules]) global.temp.contentScripts[folderModules] = {};
                     global.temp.contentScripts[folderModules][file] = contentFile;
 
-                    // Clear cache before requiring
                     delete require.cache[require.resolve(pathCommand)];
                     const command = require(pathCommand);
                     command.location = pathCommand;
                     const configCommand = command.config;
-                    
-                    // ——————————————— CHECK SYNTAXERROR ——————————————— //
-                    if (!configCommand) {
-                        throw new Error(`config of ${text} is undefined`);
-                    }
-                    if (!configCommand.category) {
-                        throw new Error(`category of ${text} is undefined`);
-                    }
+
+                    if (!configCommand) throw new Error(`Config missing in ${file}`);
+                    if (!configCommand.category && folderModules === "cmds") throw new Error(`Category missing in ${file}`);
+                    if (!configCommand.name) throw new Error(`Name missing in ${file}`);
+                    if (!command.onStart && folderModules === "cmds") throw new Error(`onStart missing in ${file}`);
+
                     const commandName = configCommand.name;
-                    if (!commandName) {
-                        throw new Error(`name of ${text} is undefined`);
-                    }
-                    if (!command.onStart) {
-                        throw new Error(`onStart of ${text} is undefined`);
-                    }
-                    if (typeof command.onStart !== "function") {
-                        throw new Error(`onStart of ${text} must be a function`);
-                    }
                     if (GoatBot[setMap].has(commandName)) {
-                        throw new Error(`${text} "${commandName}" already exists with file "${removeHomeDir(GoatBot[setMap].get(commandName).location || "")}"`);
+                        throw new Error(`Duplicate command name: ${commandName}`);
                     }
 
-                    const { onFirstChat, onChat, onLoad, onEvent, onAnyEvent } = command;
+                    // —————————————— ENV CONFIG —————————————— //
                     const { envGlobal, envConfig } = configCommand;
-                    const { aliases } = configCommand;
-
-                    // ————————————————— CHECK ALIASES —————————————————— //
-                    const validAliases = [];
-                    if (aliases) {
-                        if (!Array.isArray(aliases)) {
-                            throw new Error("The value of \"config.aliases\" must be array!");
-                        }
-                        for (const alias of aliases) {
-                            if (aliases.filter(item => item == alias).length > 1) {
-                                throw new Error(`alias "${alias}" is duplicated in ${text} "${commandName}"`);
-                            }
-                            if (GoatBot.aliases.has(alias)) {
-                                throw new Error(`alias "${alias}" already exists in ${text} "${GoatBot.aliases.get(alias)}"`);
-                            }
-                            validAliases.push(alias);
-                        }
-                        for (const alias of validAliases) {
-                            GoatBot.aliases.set(alias, commandName);
-                        }
-                    }
-
-                    // ——————————————— CHECK ENV GLOBAL ——————————————— //
-                    if (envGlobal) {
-                        if (typeof envGlobal != "object" || Array.isArray(envGlobal)) {
-                            throw new Error("the value of \"envGlobal\" must be object");
-                        }
+                    
+                    // Handle Env Global
+                    if (envGlobal && typeof envGlobal === "object") {
                         for (const i in envGlobal) {
-                            if (!configCommands.envGlobal[i]) {
-                                configCommands.envGlobal[i] = envGlobal[i];
-                            } else {
-                                try {
-                                    const readCommand = readFileSync(pathCommand, "utf-8").replace(envGlobal[i], configCommands.envGlobal[i]);
-                                    writeFileSync(pathCommand, readCommand);
-                                } catch (err) {
-                                    log.warn('ENV_GLOBAL', `Failed to update envGlobal for ${commandName}: ${err.message}`);
-                                }
-                            }
+                            if (!configCommands.envGlobal[i]) configCommands.envGlobal[i] = envGlobal[i];
                         }
                     }
 
-                    // ———————————————— CHECK CONFIG CMD ——————————————— //
-                    if (envConfig) {
-                        if (typeof envConfig != "object" || Array.isArray(envConfig)) {
-                            throw new Error("The value of \"envConfig\" must be object");
-                        }
-                        if (!configCommands[typeEnvCommand]) {
-                            configCommands[typeEnvCommand] = {};
-                        }
-                        if (!configCommands[typeEnvCommand][commandName]) {
-                            configCommands[typeEnvCommand][commandName] = {};
-                        }
+                    // Handle Env Config
+                    if (envConfig && typeof envConfig === "object") {
+                        if (!configCommands[typeEnvCommand]) configCommands[typeEnvCommand] = {};
+                        if (!configCommands[typeEnvCommand][commandName]) configCommands[typeEnvCommand][commandName] = {};
+                        
                         for (const [key, value] of Object.entries(envConfig)) {
-                            if (!configCommands[typeEnvCommand][commandName][key]) {
+                            if (configCommands[typeEnvCommand][commandName][key] === undefined) {
                                 configCommands[typeEnvCommand][commandName][key] = value;
-                            } else {
-                                try {
-                                    const readCommand = readFileSync(pathCommand, "utf-8").replace(value, configCommands[typeEnvCommand][commandName][key]);
-                                    writeFileSync(pathCommand, readCommand);
-                                } catch (err) {
-                                    log.warn('ENV_CONFIG', `Failed to update envConfig for ${commandName}: ${err.message}`);
-                                }
                             }
                         }
                     }
 
-                    // ————————————————— CHECK ONLOAD ————————————————— //
-                    if (onLoad) {
-                        if (typeof onLoad != "function") {
-                            throw new Error("The value of \"onLoad\" must be function");
-                        }
-                        try {
-                            await onLoad({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData });
-                        } catch (err) {
-                            log.warn('ONLOAD', `Error in onLoad for ${commandName}: ${err.message}`);
-                        }
-                    }
-
-                    // ——————————————— CHECK RUN ANYTIME ——————————————— //
-                    if (onChat && !GoatBot.onChat.includes(commandName)) {
-                        GoatBot.onChat.push(commandName);
-                    }
-
-                    // ——————————————— CHECK ONFIRSTCHAT ——————————————— //
-                    if (onFirstChat && !GoatBot.onFirstChat.find(item => item.commandName === commandName)) {
+                    // —————————————— REGISTER HANDLERS —————————————— //
+                    if (command.onChat && !GoatBot.onChat.includes(commandName)) GoatBot.onChat.push(commandName);
+                    if (command.onFirstChat && !GoatBot.onFirstChat.find(i => i.commandName === commandName)) {
                         GoatBot.onFirstChat.push({ commandName, threadIDsChattedFirstTime: [] });
                     }
+                    if (command.onEvent && !GoatBot.onEvent.includes(commandName)) GoatBot.onEvent.push(commandName);
+                    if (command.onAnyEvent && !GoatBot.onAnyEvent.includes(commandName)) GoatBot.onAnyEvent.push(commandName);
 
-                    // ————————————————— CHECK ONEVENT ————————————————— //
-                    if (onEvent && !GoatBot.onEvent.includes(commandName)) {
-                        GoatBot.onEvent.push(commandName);
+                    // —————————————— ALIASES —————————————— //
+                    const aliases = configCommand.aliases || [];
+                    if (Array.isArray(aliases)) {
+                        aliases.forEach(alias => {
+                            if (!GoatBot.aliases.has(alias)) GoatBot.aliases.set(alias, commandName);
+                        });
                     }
 
-                    // ———————————————— CHECK ONANYEVENT ———————————————— //
-                    if (onAnyEvent && !GoatBot.onAnyEvent.includes(commandName)) {
-                        GoatBot.onAnyEvent.push(commandName);
-                    }
-
-                    // —————————————— IMPORT TO GLOBALGOAT —————————————— //
+                    // —————————————— SAVE TO MAP —————————————— //
                     GoatBot[setMap].set(commandName.toLowerCase(), command);
                     commandLoadSuccess++;
 
-                    // Initialize file paths array if not exists
-                    if (!global.GoatBot.commandFilesPath) {
-                        global.GoatBot.commandFilesPath = [];
+                    // Execute onLoad if present
+                    if (command.onLoad && typeof command.onLoad === "function") {
+                        try {
+                            await command.onLoad({ api, threadModel, userModel, dashBoardModel, globalModel, threadsData, usersData, dashBoardData, globalData });
+                        } catch (e) {
+                            log.warn('ONLOAD', `Error in ${commandName} onLoad: ${e.message}`);
+                        }
                     }
-                    if (!global.GoatBot.eventCommandsFilesPath) {
-                        global.GoatBot.eventCommandsFilesPath = [];
-                    }
-
-                    global.GoatBot[folderModules == "cmds" ? "commandFilesPath" : "eventCommandsFilesPath"].push({
-                        filePath: path.normalize(pathCommand),
-                        commandName: [commandName, ...validAliases]
-                    });
 
                 } catch (error) {
-                    commandError.push({
-                        name: file,
-                        error
-                    });
+                    commandError.push({ name: file, error });
                 }
                 
-                // Update loading status
+                // Update status bar
                 process.stderr.write('\r\x1b[K');
-                loading.info('ASIF LOADED', `${colors.green(`${commandLoadSuccess}`)}${commandError.length ? `, ${colors.red(`${commandError.length}`)}` : ''}`);
+                loading.info('LOADED', `${colors.green(`${commandLoadSuccess}`)}${commandError.length ? ` | Errors: ${colors.red(`${commandError.length}`)}` : ''}`);
             }
 
             console.log("\n");
             
             if (commandError.length > 0) {
-                log.err("ASIF LOADED", getText('loadScripts', 'loadScriptsError', colors.yellow(text)));
-                for (const item of commandError) {
-                    console.log(` ${colors.red('✖ ' + item.name)}: ${item.error.message}`);
-                    if (process.env.NODE_ENV === 'development') {
-                        console.log(item.error.stack);
-                    }
-                }
+                log.err("LOADER", `Failed to load ${commandError.length} ${text}s`);
+                commandError.forEach(item => {
+                    console.log(` ${colors.red('✖')} ${item.name}: ${item.error.message}`);
+                });
             }
         }
 
         return true;
     } catch (error) {
-        log.err("LOADER", `Critical error in loader: ${error.message}`);
-        console.error(error);
+        log.err("LOADER", `Critical System Error: ${error.message}`);
         throw error;
     }
 };
