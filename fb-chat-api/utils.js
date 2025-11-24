@@ -21,7 +21,8 @@ function getHeaders(url, options, ctx, customHeader) {
         Referer: "https://www.facebook.com/",
         Host: url.replace("https://", "").split("/")[0],
         Origin: "https://www.facebook.com",
-        "user-agent": (options.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.5060.114 Safari/537.36"),
+        // FIX: Updated User Agent to Chrome 128 (Windows 10) to prevent Facebook detection
+        "user-agent": (options.userAgent || "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"),
         Connection: "keep-alive",
         "sec-fetch-site": 'same-origin',
         "sec-fetch-mode": 'cors'
@@ -927,8 +928,8 @@ function parseAndCheckLogin(ctx, defaultFuncs, retryCount) {
         return bluebird.try(function () {
             log.verbose("parseAndCheckLogin", data.body);
             
+            // FIX: Handling 404 as Session Die
             if (data.statusCode === 404) {
-                log.warn("parseAndCheckLogin", "Got 404 status code. This might indicate an expired session or invalid request.");
                 throw {
                     error: "Request failed with 404. The session might be expired or the endpoint is unavailable.",
                     statusCode: 404,
@@ -952,15 +953,11 @@ function parseAndCheckLogin(ctx, defaultFuncs, retryCount) {
                 if (data.request.headers["Content-Type"].split(";")[0] === "multipart/form-data") return bluebird.delay(retryTime).then(() => defaultFuncs.postFormData(url, ctx.jar, data.request.formData, {})).then(parseAndCheckLogin(ctx, defaultFuncs, retryCount));
                 else return bluebird.delay(retryTime).then(() => defaultFuncs.post(url, ctx.jar, data.request.formData)).then(parseAndCheckLogin(ctx, defaultFuncs, retryCount));
             }
-            
-            if (data.statusCode !== 200) {
-                log.warn("parseAndCheckLogin", "Got unexpected status code: " + data.statusCode);
-                throw {
-                    error: "parseAndCheckLogin got status code: " + data.statusCode + ". The request might have failed.",
-                    statusCode: data.statusCode,
-                    res: data.body
-                };
-            }
+            if (data.statusCode !== 200) throw {
+                error: "parseAndCheckLogin got status code: " + data.statusCode + ". The request might have failed.",
+                statusCode: data.statusCode,
+                res: data.body
+            };
 
             var res = null;
             try {
