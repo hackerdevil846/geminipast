@@ -31,7 +31,6 @@ const audioExt = ["3gp", "aa", "aac", "aax", "act", "aiff", "alac", "amr",
 ];
 
 module.exports = async (api) => {
-    // Initialize DB if running standalone (fallback)
     if (!api && !global.db) await require("./connectDB.js")();
 
     const { utils, utils: { drive } } = global;
@@ -41,7 +40,6 @@ module.exports = async (api) => {
 
     const getText = global.utils.getText;
 
-    // --- GOOGLE AUTH & EMAIL SETUP (Safe Mode) ---
     const { email, clientId, clientSecret, refreshToken } = gmailAccount;
     let transporter = null;
     let accessToken = null;
@@ -68,10 +66,10 @@ module.exports = async (api) => {
             });
             utils.log.info("DASHBOARD", "Gmail SMTP Connected Successfully.");
         } catch (err) {
-            utils.log.warn("DASHBOARD", "Google API Token Expired or Invalid. Email features (Forgot Password/Register) will be DISABLED. Bot will continue running.");
+            utils.log.warn("DASHBOARD", "Google API Token Expired or Invalid. Email features disabled.");
         }
     } else {
-        utils.log.warn("DASHBOARD", "Gmail credentials missing in config.json. Email features disabled.");
+        utils.log.warn("DASHBOARD", "Gmail credentials missing. Email features disabled.");
     }
 
     const {
@@ -93,7 +91,6 @@ module.exports = async (api) => {
     app.use(bodyParser.urlencoded({ extended: true }));
     app.use(cookieParser());
 
-    // FIX: Use a static secret if available, else fallback to random (prevents logout on restart)
     const sessionSecret = config.dashBoard.sessionSecret || randomStringApikey(20);
     
     app.use(session({
@@ -101,13 +98,12 @@ module.exports = async (api) => {
         resave: false,
         saveUninitialized: true,
         cookie: {
-            secure: false, // Set true if using HTTPS
+            secure: false,
             httpOnly: true,
-            maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days
+            maxAge: 1000 * 60 * 60 * 24 * 7 
         }
     }));
 
-    // Public folder 
     app.use("/css", express.static(`${__dirname}/css`));
     app.use("/js", express.static(`${__dirname}/js`));
     app.use("/images", express.static(`${__dirname}/images`));
@@ -130,7 +126,6 @@ module.exports = async (api) => {
 
     const generateEmailVerificationCode = require("./scripts/generate-Email-Verification.js");
 
-    // ————————————————— MIDDLEWARE ————————————————— //
     const createLimiter = (ms, max) => rateLimit({
         windowMs: ms,
         max,
@@ -147,7 +142,6 @@ module.exports = async (api) => {
     async function checkAuthConfigDashboardOfThread(threadData, userID) {
         if (!isNaN(threadData))
             threadData = await threadsData.get(threadData);
-        // Added safety check for threadData
         if (!threadData) return false;
         return threadData.adminIDs?.includes(userID) || threadData.members?.some(m => m.userID == userID && m.permissionConfigDashboard == true) || false;
     }
@@ -165,7 +159,6 @@ module.exports = async (api) => {
         }
     }
 
-    // ROUTES & MIDDLWARE PARAMS
     const {
         unAuthenticated, isWaitVerifyAccount, isAuthenticated, isAdmin,
         isVeryfiUserIDFacebook, checkHasAndInThread, middlewareCheckAuthConfigDashboardOfThread
@@ -195,12 +188,9 @@ module.exports = async (api) => {
     app.get("/stats", async (req, res) => {
         let fcaVersion = "unknown";
         try {
-            // Safely attempt to require package.json, might differ based on folder structure
             fcaVersion = require("fb-chat-api/package.json").version;
         } catch (e) {
-            try {
-                fcaVersion = require("../fb-chat-api/package.json").version;
-            } catch (err) { /* ignore */ }
+            try { fcaVersion = require("../fb-chat-api/package.json").version; } catch (err) {}
         }
 
         const totalThread = (await threadsData.getAll()).filter(t => t.threadID.toString().length > 15).length;
@@ -284,7 +274,7 @@ module.exports = async (api) => {
     });
 
     app.use((err, req, res, next) => {
-        console.error(err); // Log error to console for debugging
+        console.error(err); 
         if (err.message && err.message.includes("Login sessions require session support"))
             return res.status(500).send(getText("app", "serverError"));
         next(err);
@@ -323,4 +313,8 @@ function randomNumberApikey(maxLength) {
 function validateEmail(email) {
 	const re = /^(([^<>()\[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
 	return re.test(email);
+}
+
+function convertSize(byte) {
+	return byte > 1024 ? byte > 1024 * 1024 ? (byte / 1024 / 1024).toFixed(2) + " MB" : (byte / 1024).toFixed(2) + " KB" : byte + " Byte";
 }
