@@ -6,6 +6,7 @@ var mqtt = require('mqtt');
 var websocket = require('websocket-stream');
 var HttpsProxyAgent = require('https-proxy-agent');
 const EventEmitter = require('events');
+const fs = require('fs'); // Added fs for file operations
 
 var identity = function () { };
 var form = {};
@@ -35,7 +36,6 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
     var sessionID = Math.floor(Math.random() * 9007199254740991) + 1;
     var GUID = utils.getGUID();
     
-    // Construct simplified username payload for MQTT
     const username = {
         u: ctx.userID,
         s: sessionID,
@@ -43,7 +43,7 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
         fg: false,
         d: GUID,
         ct: 'websocket',
-        aid: '219994525426954', // Messenger App ID
+        aid: '219994525426954',
         mqtt_sid: '',
         cp: 3,
         ecp: 10,
@@ -57,7 +57,6 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
 
     var cookies = ctx.jar.getCookies("https://www.facebook.com").join("; ");
 
-    // Determine Host
     var host;
     if (ctx.mqttEndpoint) host = `${ctx.mqttEndpoint}&sid=${sessionID}&cid=${GUID}`;
     else if (ctx.region) host = `wss://edge-chat.facebook.com/chat?region=${ctx.region.toLocaleLowerCase()}&sid=${sessionID}&cid=${GUID}`;
@@ -92,15 +91,12 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
     }
 
     ctx.mqttClient = new mqtt.Client(_ => websocket(host, options.wsOptions), options);
-    global.mqttClient = ctx.mqttClient; // For external access if needed
-
-    // --- MQTT EVENTS ---
+    global.mqttClient = ctx.mqttClient; 
 
     ctx.mqttClient.on('error', function (err) {
         log.error("listenMqtt", err);
         ctx.mqttClient.end();
         if (ctx.globalOptions.autoReconnect) {
-            log.info("listenMqtt", "Connection failed, attempting to reconnect via getSeqID...");
             getSeqID();
         } else {
             globalCallback({ type: "stop_listen", error: "Connection refused: Server unavailable" }, null);
@@ -163,7 +159,6 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
 
             if (jsonMessage.lastIssuedSeqId) ctx.lastSeqId = parseInt(jsonMessage.lastIssuedSeqId);
 
-            // Process Deltas
             for (var i in jsonMessage.deltas) {
                 var delta = jsonMessage.deltas[i];
                 parseDelta(defaultFuncs, api, ctx, globalCallback, { "delta": delta });
@@ -192,9 +187,7 @@ function listenMqtt(defaultFuncs, api, ctx, globalCallback) {
         }
     });
 
-    ctx.mqttClient.on('close', function () {
-        // Just a close event, usually handled by error or end
-    });
+    ctx.mqttClient.on('close', function () { });
 }
 
 function parseDelta(defaultFuncs, api, ctx, globalCallback, v) {
@@ -263,7 +256,6 @@ function parseDelta(defaultFuncs, api, ctx, globalCallback, v) {
                         timestamp: delta.deltaRecallMessageData.timestamp
                     });
                 } else if (delta.deltaMessageReply) {
-                    // Handling Reply Logic
                     var mdata = delta.deltaMessageReply.message === undefined ? [] :
                         delta.deltaMessageReply.message.data === undefined ? [] :
                             delta.deltaMessageReply.message.data.prng === undefined ? [] :
@@ -343,7 +335,6 @@ function parseDelta(defaultFuncs, api, ctx, globalCallback, v) {
 
     if (v.delta.class !== "NewMessage" && !ctx.globalOptions.listenEvents) return;
     
-    // Event Handling
     switch (v.delta.class) {
         case "JoinableMode":
         case "AdminTextMessage":
@@ -400,14 +391,35 @@ module.exports = function (defaultFuncs, api, ctx) {
             })
             .catch((err) => {
                 log.error("getSeqId", err);
-                // IF WE GET A LOGIN ERROR HERE, WE MUST TRIGGER RE-LOGIN
+                
+                // 🟢 FIX: Detect "Not Logged In" and Trigger Auto-Recovery
                 if (utils.getType(err) == "Object" && (err.error === "Not logged in" || err.error === "Not logged in.")) {
                     ctx.loggedIn = false;
-                    log.error("getSeqID", "Session died. Bot needs restart or Auto-Login trigger.");
-                    // Ideally, your main bot file should handle process.exit to restart, 
-                    // or you can implement a recursive login strategy here if deeply integrated.
-                    // For Goat Bot style, stopping allows the watcher to restart it.
-                    process.exit(1); 
+                    log.warn("getSeqID", "Session Invalidated (Error 1357004). Clearing cookies and Triggering Auto-Recovery...");
+
+                    // 1. Clear Cookie Files to force fresh login next time
+                    try {
+                        if (global.client && global.client.dirAccount) {
+                            fs.writeFileSync(global.client.dirAccount, ""); // Wipe account.txt
+                            log.info("getSeqID", "Cleared account.txt");
+                        }
+                        if (fs.existsSync("appstate.json")) {
+                            fs.unlinkSync("appstate.json"); // Delete appstate.json
+                            log.info("getSeqID", "Deleted appstate.json");
+                        }
+                    } catch(e) {
+                        log.error("getSeqID", "Failed to clear cookies: " + e.message);
+                    }
+
+                    // 2. Call reLoginBot if available
+                    if (global.GoatBot && typeof global.GoatBot.reLoginBot === 'function') {
+                        log.info("getSeqID", "Calling reLoginBot() for fresh login...");
+                        setTimeout(() => global.GoatBot.reLoginBot(), 2000);
+                    } else {
+                        log.error("getSeqID", "reLoginBot function not found. Exiting to force restart...");
+                        process.exit(1);
+                    }
+                    return;
                 }
                 return globalCallback(err);
             });
