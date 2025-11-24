@@ -1,7 +1,11 @@
 const { colors } = require('../func/colors.js');
 const moment = require("moment-timezone");
 const characters = '';
-const getCurrentTime = () => colors.gray(moment().tz('Asia/Ho_Chi_Minh').format('HH:mm:ss DD/MM/YYYY'));
+
+// Use config timezone or default to Asia/Dhaka
+const getTimeZone = () => (global.GoatBot && global.GoatBot.config && global.GoatBot.config.timeZone) ? global.GoatBot.config.timeZone : 'Asia/Dhaka';
+
+const getCurrentTime = () => colors.gray(moment().tz(getTimeZone()).format('HH:mm:ss DD/MM/YYYY'));
 
 function logError(prefix, message) {
 	if (message === undefined) {
@@ -28,10 +32,10 @@ module.exports = {
 		}
 		process.stderr.write(`\r${`${getCurrentTime()} ${colors.greenBright(`${characters} ${prefix}:`)} ${message}`}`);
 	},
-	succes: function (prefix, message) {
+	success: function (prefix, message) {
 		if (message === undefined) {
 			message = prefix;
-			prefix = "SUCCES";
+			prefix = "SUCCESS";
 		}
 		process.stderr.write(`\r${`${getCurrentTime()} ${colors.cyanBright(`${characters} ${prefix}:`)} ${message}`}`);
 	},
