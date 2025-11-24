@@ -1,46 +1,56 @@
-const axios = require('axios');
-const { config } = global.GoatBot;
-const { log, getText } = global.utils;
-if (global.timeOutUptime != undefined)
-	clearTimeout(global.timeOutUptime);
-if (!config.autoUptime.enable)
-	return;
+const axios = require("axios");
+const { log } = global.utils;
+const fs = require("fs-extra");
+const path = require("path");
 
-const PORT = config.dashBoard?.port || (!isNaN(config.serverUptime.port) && config.serverUptime.port) || 3001;
+const configPath = path.join(__dirname, "../config.json");
+let config;
 
-let myUrl = config.autoUptime.url || `https://${process.env.REPL_OWNER
-	? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-	: process.env.API_SERVER_EXTERNAL == "https://api.glitch.com"
-		? `${process.env.PROJECT_DOMAIN}.glitch.me`
-		: `localhost:${PORT}`}`;
-myUrl.includes('localhost') && (myUrl = myUrl.replace('https', 'http'));
-myUrl += '/uptime';
+try {
+    if (fs.existsSync(configPath)) {
+        config = require(configPath);
+    } else {
+        config = { autoUptime: { enable: false } };
+    }
+} catch (err) {
+    config = { autoUptime: { enable: false } };
+    log.warn("AUTO UPTIME", "Could not load config.json for uptime settings.");
+}
 
-let status = 'ok';
-setTimeout(async function autoUptime() {
-	try {
-		await axios.get(myUrl);
-		if (status != 'ok') {
-			status = 'ok';
-			log.info("UPTIME", "Bot is online");
-			// Custome notification here
-		}
-	}
-	catch (e) {
-		const err = e.response?.data || e;
-		if (status != 'ok')
-			return;
-		status = 'failed';
+if (config.autoUptime && config.autoUptime.enable) {
+    const time = config.autoUptime.time || 300; // Default 5 minutes
+    
+    // Determine the URL based on the environment (Replit or Glitch or manual)
+    let url = config.autoUptime.url;
+    if (!url) {
+        if (process.env.REPL_SLUG && process.env.REPL_OWNER) {
+            url = `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`;
+        } else if (process.env.PROJECT_DOMAIN) {
+            url = `https://${process.env.PROJECT_DOMAIN}.glitch.me`;
+        }
+    }
 
-		if (err.statusAccountBot == "can't login") {
-			log.err("UPTIME", "Can't login account bot");
-			// Custome notification here
-		}
-		else if (err.statusAccountBot == "block spam") {
-			log.err("UPTIME", "Your account is blocked");
-			// Custome notification here
-		}
-	}
-	global.timeOutUptime = setInterval(autoUptime, config.autoUptime.timeInterval);
-}, (config.autoUptime.timeInterval || 180) * 1000);
-log.info("AUTO UPTIME", getText("autoUptime", "autoUptimeTurnedOn", myUrl));
+    if (url) {
+        log.info("AUTO UPTIME", `Auto uptime enabled. Pinging ${url} every ${time} seconds.`);
+        
+        setInterval(async () => {
+            try {
+                const res = await axios.get(url);
+                if (res.status === 200) {
+                    // log.info("AUTO UPTIME", "Pinged server successfully.");
+                } else {
+                    log.warn("AUTO UPTIME", `Ping responded with status: ${res.status}`);
+                }
+            } catch (e) {
+                // Log only critical connection errors, ignore simple timeouts to keep console clean
+                if (e.response) {
+                    log.warn("AUTO UPTIME", `Ping failed with status: ${e.response.status}`);
+                } else {
+                    // log.verbose("AUTO UPTIME", `Ping failed: ${e.message}`);
+                }
+            }
+        }, time * 1000);
+    } else {
+        log.warn("AUTO UPTIME", "Auto uptime is enabled but no URL could be determined.");
+    }
+}
