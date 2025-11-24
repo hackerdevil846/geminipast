@@ -1,5 +1,5 @@
 // set bash title
-process.stdout.write("\x1b]2;Goat Bot V2 - Fca By Asif68x\x1b\x5c");
+process.stdout.write("\x1b]2;Goat Bot V2 - Fix by Asif\x1b\x5c");
 const defaultRequire = require;
 
 function decode(text) {
@@ -643,12 +643,15 @@ async function startBot(loginWithEmail) {
 
 		let isSendNotiErrorMessage = false;
 
+        // FIX: ANTI-BAN LOGIN OPTIONS
 		const loginOptions = {
 			...global.GoatBot.config.optionsFca,
 			listenEvents: true,
 			selfListen: false,
 			updatePresence: true,
-			forceLogin: true
+			forceLogin: true,
+            autoReconnect: true,
+            userAgent: "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
 		};
 
 		login({ appState }, loginOptions, async function (error, api) {
@@ -684,12 +687,14 @@ async function startBot(loginWithEmail) {
 				log.err("LOGIN FACEBOOK", getText('login', 'loginError'), error);
 				global.statusAccountBot = 'can\'t login';
 				
-				if (error.error && (error.error.includes("Not logged in") || error.error.includes("404"))) {
-					log.warn("LOGIN FACEBOOK", "Detected login error, attempting to relogin with fresh credentials...");
+				if (error.error && (error.error.includes("Not logged in") || error.error.includes("404") || error.error.includes("Login failed"))) {
+					log.warn("LOGIN FACEBOOK", "Detected login error, attempting to relogin with fresh credentials in 10s...");
+                    // FIX: WAIT 10 SECONDS BEFORE RESTART
+                    await sleep(10000);
 					if (facebookAccount.email && facebookAccount.password) {
-						await sleep(3000);
 						return startBot(true);
 					}
+                    process.exit(2);
 				}
 
 				if (global.GoatBot.config.dashBoard?.enable == true) {
@@ -904,7 +909,8 @@ async function startBot(loginWithEmail) {
 					if (
 						error.error == "Not logged in" ||
 						error.error == "Not logged in." ||
-						error.error == "Connection refused: Server unavailable"
+						error.error == "Connection refused: Server unavailable" ||
+                        String(error).includes("Login failed")
 					) {
 						log.err("NOT LOGGED IN", getText('login', 'notLoggedIn'), error);
 						global.responseUptimeCurrent = responseUptimeError;
@@ -914,8 +920,12 @@ async function startBot(loginWithEmail) {
 							isSendNotiErrorMessage = true;
 						}
 
-						if (global.GoatBot.config.autoRestartWhenListenMqttError)
+						if (global.GoatBot.config.autoRestartWhenListenMqttError) {
+                            // FIX: WAIT BEFORE RESTART
+                            log.warn("LISTEN", "Connection lost. Waiting 10s before restart...");
+                            await sleep(10000);
 							process.exit(2);
+                        }
 						else {
 							const keyListen = Object.keys(callbackListenTime).pop();
 							if (callbackListenTime[keyListen])
