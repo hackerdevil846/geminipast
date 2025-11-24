@@ -1,5 +1,5 @@
 // set bash title
-process.stdout.write("\x1b]2;Goat Bot V2 - Fca By Asif68x\x1b\x5c");
+process.stdout.write("\x1b]2;Goat Bot V2 - Super Modified\x1b\x5c");
 const defaultRequire = require;
 
 function decode(text) {
@@ -227,118 +227,28 @@ let changeFbStateByCode = false;
 let latestChangeContentAccount = fs.statSync(dirAccount).mtimeMs;
 let dashBoardIsRunning = false;
 
+// --- MODIFIED: USE AuthManager FOR LOGIN ---
 async function getAppStateFromEmail(spin = { _start: () => { }, _stop: () => { } }, facebookAccount) {
-	const { email, password, userAgent, proxy } = facebookAccount;
-	const getFbstate = require(process.env.NODE_ENV === 'development' ? "./getFbstate1.dev.js" : "./getFbstate1.js");
-	let code2FATemp;
-	let appState;
+	if (spin) spin._stop(); // Stop spinner to prevent visual bugs
+	
 	try {
-		try {
-			appState = await getFbstate(checkAndTrimString(email), checkAndTrimString(password), userAgent, proxy);
-			spin._stop();
-		}
-		catch (err) {
-			if (err.continue) {
-				let tryNumber = 0;
-				let isExit = false;
-
-				await (async function submitCode(message) {
-					if (message && isExit) {
-						spin._stop();
-						log.error("LOGIN FACEBOOK", message);
-						process.exit();
-					}
-
-					if (message) {
-						spin._stop();
-						log.warn("LOGIN FACEBOOK", message);
-					}
-
-					if (facebookAccount["2FASecret"] && tryNumber == 0) {
-						switch (['.png', '.jpg', '.jpeg'].some(i => facebookAccount["2FASecret"].endsWith(i))) {
-							case true:
-								code2FATemp = (await qr.readQrCode(`${process.cwd()}/${facebookAccount["2FASecret"]}`)).replace(/.*secret=(.*)&digits.*/g, '$1');
-								break;
-							case false:
-								code2FATemp = facebookAccount["2FASecret"];
-								break;
-						}
-					}
-					else {
-						spin._stop();
-						code2FATemp = await input("> Enter 2FA code or secret: ");
-						readline.moveCursor(process.stderr, 0, -1);
-						readline.clearScreenDown(process.stderr);
-					}
-
-					const code2FA = isNaN(code2FATemp) ?
-						toptp(
-							code2FATemp.normalize("NFD")
-								.toLowerCase()
-								.replace(/[\u0300-\u036f]/g, "")
-								.replace(/[đ|Đ]/g, (x) => x == "đ" ? "d" : "D")
-								.replace(/\(|\)|\,/g, "")
-								.replace(/ /g, "")
-						) :
-						code2FATemp;
-					spin._start();
-					try {
-						appState = JSON.parse(JSON.stringify(await err.continue(code2FA)));
-						appState = appState.map(item => ({
-							key: item.key,
-							value: item.value,
-							domain: item.domain,
-							path: item.path,
-							hostOnly: item.hostOnly,
-							creation: item.creation,
-							lastAccessed: item.lastAccessed
-						})).filter(item => item.key);
-						spin._stop();
-					}
-					catch (err) {
-						tryNumber++;
-						if (!err.continue)
-							isExit = true;
-						await submitCode(err.message);
-					}
-				})(err.message);
-			}
-			else
-				throw err;
-		}
+		// Import the new AuthManager
+		const AuthManager = require(process.cwd() + "/fb-chat-api/src/AuthManager.js");
+		const { email, password } = facebookAccount;
+		
+		// Use AuthManager to login safely via Playwright
+		// We pass 'true' to getAppState to force a new login
+		const auth = new AuthManager(email, password, global.client.dirAccount);
+		log.info("LOGIN", "Starting Playwright Automated Login...");
+		
+		const appState = await auth.getAppState(true);
+		
+		if (spin) spin._start(); // Restart spinner if needed
+		return appState;
+	} catch (err) {
+		if (spin) spin._stop();
+		throw err;
 	}
-	catch (err) {
-		const loginMbasic = require(process.env.NODE_ENV === 'development' ? "./loginMbasic.dev.js" : "./loginMbasic.js");
-		if (facebookAccount["2FASecret"]) {
-			switch (['.png', '.jpg', '.jpeg'].some(i => facebookAccount["2FASecret"].endsWith(i))) {
-				case true:
-					code2FATemp = (await qr.readQrCode(`${process.cwd()}/${facebookAccount["2FASecret"]}`)).replace(/.*secret=(.*)&digits.*/g, '$1');
-					break;
-				case false:
-					code2FATemp = facebookAccount["2FASecret"];
-					break;
-			}
-		}
-
-		appState = await loginMbasic({
-			email,
-			pass: password,
-			twoFactorSecretOrCode: code2FATemp,
-			userAgent,
-			proxy
-		});
-
-		appState = appState.map(item => {
-			item.key = item.name;
-			delete item.name;
-			return item;
-		});
-		appState = filterKeysAppState(appState);
-	}
-
-	global.GoatBot.config.facebookAccount['2FASecret'] = code2FATemp || "";
-	writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
-	return appState;
 }
 
 function isNetScapeCookie(cookie) {
