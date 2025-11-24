@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { log } = require('./logger/log.js');
 
-axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/updater.js")
-	.then(res => eval(res.data));
+// Prevent loading remote updater which would break the bot
+log.warn("UPDATER", "Update script disabled to protect Super Modified core files.");
