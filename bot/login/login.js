@@ -643,7 +643,7 @@ async function startBot(loginWithEmail) {
 
 		let isSendNotiErrorMessage = false;
 
-        // FIX: ANTI-BAN LOGIN OPTIONS
+		// FIX: ANTI-BAN LOGIN OPTIONS
 		const loginOptions = {
 			...global.GoatBot.config.optionsFca,
 			listenEvents: true,
