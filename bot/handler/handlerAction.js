@@ -5,6 +5,9 @@ module.exports = (api, threadModel, userModel, dashBoardModel, globalModel, user
 	const handlerEvents = require(process.env.NODE_ENV == 'development' ? "./handlerEvents.dev.js" : "./handlerEvents.js")(api, threadModel, userModel, dashBoardModel, globalModel, usersData, threadsData, dashBoardData, globalData);
 
 	return async function (event) {
+		// Safety check for event
+		if (!event || !event.type) return;
+
 		// Check if the bot is in the inbox and anti inbox is enabled
 		if (
 			global.GoatBot.config.antiInbox == true &&
@@ -13,55 +16,58 @@ module.exports = (api, threadModel, userModel, dashBoardModel, globalModel, user
 		)
 			return;
 
-		const message = createFuncMessage(api, event);
+		try {
+			const message = createFuncMessage(api, event);
 
-		await handlerCheckDB(usersData, threadsData, event);
-		const handlerChat = await handlerEvents(event, message);
-		if (!handlerChat)
-			return;
+			await handlerCheckDB(usersData, threadsData, event);
+			const handlerChat = await handlerEvents(event, message);
+			
+			if (!handlerChat) return;
 
-		const {
-			onAnyEvent, onFirstChat, onStart, onChat,
-			onReply, onEvent, handlerEvent, onReaction,
-			typ, presence, read_receipt
-		} = handlerChat;
+			const {
+				onAnyEvent, onFirstChat, onStart, onChat,
+				onReply, onEvent, handlerEvent, onReaction,
+				typ, presence, read_receipt
+			} = handlerChat;
 
+			// Execute Always
+			if (onAnyEvent) onAnyEvent();
 
-		onAnyEvent();
-		switch (event.type) {
-			case "message":
-			case "message_reply":
-			case "message_unsend":
-				onFirstChat();
-				onChat();
-				onStart();
-				onReply();
-				break;
-			case "event":
-				handlerEvent();
-				onEvent();
-				break;
-			case "message_reaction":
-				onReaction();
-				break;
-			case "typ":
-				typ();
-				break;
-			case "presence":
-				presence();
-				break;
-			case "read_receipt":
-				read_receipt();
-				break;
-			// case "friend_request_received":
-			// { /* code block */ }
-			// break;
-
-			// case "friend_request_cancel"
-			// { /* code block */ }
-			// break;
-			default:
-				break;
+			switch (event.type) {
+				case "message":
+				case "message_reply":
+				case "message_unsend":
+					if (onFirstChat) onFirstChat();
+					if (onChat) onChat();
+					if (onStart) onStart();
+					if (onReply) onReply();
+					break;
+				case "event":
+				case "change_thread_image":
+				case "change_thread_name":
+				case "log:subscribe":
+				case "log:unsubscribe":
+					if (handlerEvent) handlerEvent();
+					if (onEvent) onEvent();
+					break;
+				case "message_reaction":
+					if (onReaction) onReaction();
+					break;
+				case "typ":
+					if (typ) typ();
+					break;
+				case "presence":
+					if (presence) presence();
+					break;
+				case "read_receipt":
+					if (read_receipt) read_receipt();
+					break;
+				default:
+					break;
+			}
+		} catch (error) {
+			// Log error but prevent crash
+			global.utils.log.err("HANDLER ACTION", "Critical Error in Action Handler:", error);
 		}
 	};
 };
