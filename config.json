@@ -1,65 +1,150 @@
 {
-  "prefix": "/",
+  "facebookAccount": {
+    "email": "ahmedzayan102@gmail.com",
+    "password": "910@12340",
+    "2FASecret": "hxhjdjj",
+    "i_user": "",
+    "proxy": null,
+    "userAgent": "Mozilla/5.0 (Linux; Android 12; M2102J20SG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36",
+    "intervalGetNewCookie": 1440,
+    "notes": "time the system automatically retrieves new cookies"
+  },
+  "antiInbox": true,
+  "checkApproval": true,
   "language": "en",
+  "notesLanguage": "change to your language with ISO 639-1 code",
+  "nickNameBot": "𝑯𝒂𝒏𝒊𝒂 𓆩🖤𓆪",
+  "prefix": "/",
+  "adminOnly": {
+    "enable": false,
+    "ignoreCommand": []
+  },
   "adminBot": [
     "61571630409265"
   ],
-  "nickNameBot": "𝑯𝒂𝒏𝒊𝒂 𓆩🖤𓆪",
-  "autoRestart": {
-    "enable": true,
-    "time": 21600000
+  "whiteListMode": {
+    "enable": false,
+    "whiteListIds": [
+      "61571630409265"
+    ],
+    "notes": "only the ids in the whiteListIds list can use the bot"
   },
-  "autoRestartWhenListenMqttError": true,
-  "autoUptime": {
-    "enable": true,
-    "time": 120,
-    "url": ""
+  "whiteListModeThread": {
+    "enable": false,
+    "whiteListThreadIds": [],
+    "notes": "only the thread in the whiteListThreadIds list can use the bot",
+    "how_it_work": "check whiteListIds then whiteListThreadIds"
   },
-  "optionsFca": {
-    "forceLogin": true,
-    "listenEvents": true,
-    "logLevel": "silent",
-    "selfListen": false,
-    "updatePresence": true,
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+  "database": {
+    "type": "sqlite",
+    "uriMongodb": "",
+    "autoSyncWhenStart": false,
+    "autoRefreshThreadInfoFirstTime": true,
+    "notes": "type selects 'json' or 'sqlite' or 'mongodb'"
   },
-  "design": {
-    "adminName": "Asif",
-    "adminUrl": "https://www.facebook.com/share/1YBfDXHGtt/"
-  },
-  "antiSpam": {
-    "enable": true,
-    "countMessage": 10,
-    "timeReset": 10000
-  },
-  "autoLoadScripts": {
-    "enable": true,
-    "ignoreCmds": "",
-    "ignoreEvents": ""
-  },
-  "logEvents": {
-    "disableAll": false,
-    "message": true,
-    "message_reply": true,
-    "message_reaction": true,
-    "event": true,
-    "typ": false,
-    "read_receipt": false,
-    "presence": false
-  },
-  "serverUptime": {
-    "enable": true,
-    "port": 3000,
-    "socket": {
-      "enable": true
+  "timeZone": "Asia/Dhaka",
+  "credentials": {
+    "gmailAccount": {
+      "email": "messengerbot61@gamil.com",
+      "clientId": "552344212361-ujv8mjve7ue0r20t5caem9a41o8il508.apps.googleusercontent.com",
+      "clientSecret": "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",
+      "refreshToken": "1//04KHgkn8_-_PfCgYIARAAGAQSNwF-L9Iro-cV9UkOYQjg6noVALzdmrnrL8rijCPS96WGrKoflqLkXr76iZiXezLunTbJAU1AxS4",
+      "apiKey": ""
+    },
+    "gRecaptcha": {
+      "siteKey": "6LcjUNYnAAAAACJRnuYb4PH2C1ZlesOimLIcziSd",
+      "secretKey": "6LcjUNYnAAAAAMWhPUFOdbhYbmeHtYoWzrH4YUDQ"
     }
   },
   "dashBoard": {
     "enable": true,
-    "port": 3000
+    "expireVerifyCode": 300000,
+    "port": 9999
   },
-  "credentials": {
-    "gmailAccount": {},
-    "gmailPassword": ""
+  "serverUptime": {
+    "enable": false,
+    "port": 3001,
+    "socket": {
+      "enable": true,
+      "channelName": "uptime",
+      "verifyToken": ""
+    }
+  },
+  "autoRestart": {
+    "time": 172800000,
+    "notes": "milisecond or cron time"
+  },
+  "autoUptime": {
+    "enable": false,
+    "timeInterval": 180,
+    "url": "",
+    "notes": "timeInterval is seconds"
+  },
+  "autoLoadScripts": {
+    "enable": false,
+    "ignoreCmds": "",
+    "ignoreEvents": "",
+    "notes": "automatically load the script when changed"
+  },
+  "autoRefreshFbstate": true,
+  "autoReloginWhenChangeAccount": true,
+  "autoRestartWhenListenMqttError": false,
+  "restartListenMqtt": {
+    "enable": true,
+    "timeRestart": 1800000,
+    "delayAfterStopListening": 2000,
+    "logNoti": true,
+    "notes": "milisecond"
+  },
+  "notiWhenListenMqttError": {
+    "notes": "message when mqtt server stops working",
+    "gmail": {
+      "enable": false,
+      "emailGetNoti": "",
+      "note": "separate by comma or space"
+    },
+    "telegram": {
+      "enable": false,
+      "botToken": "",
+      "chatId": "",
+      "note": "separate by comma or space"
+    },
+    "discordHook": {
+      "enable": false,
+      "webhookUrl": "",
+      "note": "separate by comma or space"
+    }
+  },
+  "hideNotiMessage": {
+    "commandNotFound": false,
+    "adminOnly": false,
+    "threadBanned": false,
+    "userBanned": false,
+    "needRoleToUseCmd": false,
+    "needRoleToUseCmdOnReply": false,
+    "needRoleToUseCmdOnReaction": false
+  },
+  "logEvents": {
+    "disableAll": false,
+    "message": true,
+    "message_reaction": true,
+    "message_unsend": true,
+    "message_reply": true,
+    "event": true,
+    "read_receipt": false,
+    "typ": false,
+    "presence": false
+  },
+  "optionsFca": {
+    "forceLogin": true,
+    "listenEvents": true,
+    "updatePresence": true,
+    "listenTyping": true,
+    "logLevel": "error",
+    "selfListen": false,
+    "selfListenEvent": true,
+    "autoMarkDelivery": false,
+    "autoReconnect": false,
+    "notes": "Document here: https://github.com/ntkhang03/fb-chat-api/blob/master/DOCS.md#apisetoptionsoptions"
   }
 }
