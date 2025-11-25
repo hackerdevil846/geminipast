@@ -1,117 +1,169 @@
- const num = 6000; // Number of times spam gets banned -1 (for example, 5 times means 6 times will get banned)
-const timee = 120; // During this time (in seconds), if someone spams `num` times, they will be banned
+const num = 10; // LIMIT: Number of messages to trigger ban. Change this if needed.
+const timee = 120; // TIME: 120 seconds (2 minutes).
 
 module.exports = {
   config: {
     name: "antispam",
-    version: "1.0.0",
+    version: "2.2.0",
     permission: 0,
     credits: "asif",
-    description: "Automatically ban spammers",
+    description: "Automatically ban spammers and unban after time",
     prefix: true,
     category: "system",
     usages: "none",
     cooldowns: 0,
   },
 
-  // Main command handler
   onStart: async function({ api, event }) {
-    return api.sendMessage(
-      `Automatically ban users if they spam ${num} times within ${timee} seconds.`,
-      event.threadID,
-      event.messageID
-    );
-  },
-
-  // Event handler for messages
-  onChat: async function({ Users, Threads, api, event }) {
-    let { senderID, messageID, threadID } = event;
-
-    // Safety check for Threads
-    if (!Threads || typeof Threads.getData !== 'function') {
-      console.error('Threads is undefined or invalid in antispam.js onChat');
-      api.sendMessage('Error: Thread data is unavailable. Contact an admin.', threadID);
+    try {
+      return api.sendMessage(
+        `Anti-spam active: Users will be banned if they spam ${num} times within ${timee} seconds.`,
+        event.threadID,
+        event.messageID
+      );
+    } catch (e) {
+      // SILENT CATCH: Do not send error if onStart fails
       return;
     }
+  },
 
-    var datathread = (await Threads.getData(event.threadID)).threadInfo;
+  onChat: async function({ Users, Threads, api, event }) {
+    // MASTER TRY-CATCH: Wraps the entire command to prevent ANY error message from being sent to chat
+    try {
+      // 1. Basic checks
+      if (!event.body) return;
+      
+      let { senderID, messageID, threadID } = event;
+      const sender = senderID;
 
-    // Initialize autoban tracking if not exists
-    if (!global.client.autoban) global.client.autoban = {};
-
-    // Initialize tracking for this user if not exists
-    if (!global.client.autoban[senderID]) {
-      global.client.autoban[senderID] = {
-        timeStart: Date.now(),
-        number: 0
-      };
-    }
-
-    const threadSetting = global.data.threadData.get(threadID) || {};
-    const prefix = threadSetting.PREFIX || global.config.PREFIX;
-
-    // Only check commands (messages starting with prefix)
-    if (!event.body || event.body.indexOf(prefix) != 0) return;
-
-    // Check if enough time has passed to reset the counter
-    if ((global.client.autoban[senderID].timeStart + (timee * 1000)) <= Date.now()) {
-      global.client.autoban[senderID] = {
-        timeStart: Date.now(),
-        number: 0
-      };
-    } else {
-      global.client.autoban[senderID].number++;
-
-      // If spam threshold reached
-      if (global.client.autoban[senderID].number >= num) {
-        const moment = require("moment-timezone");
-        const timeDate = moment.tz("Asia/Manila").format("DD/MM/YYYY HH:mm:ss");
-
-        // Get user data and prepare ban
-        let dataUser = await Users.getData(senderID) || {};
-        let data = dataUser.data || {};
-
-        // Skip if already banned
-        if (data && data.banned == true) return;
-
-        // Apply ban
-        data.banned = true;
-        data.reason = `spam bot ${num} times/${timee}s` || null;
-        data.dateAdded = timeDate;
-
-        // Save ban data
-        await Users.setData(senderID, { data });
-        global.data.userBanned.set(senderID, {
-          reason: data.reason,
-          dateAdded: data.dateAdded
-        });
-
-        // Reset counter after ban
-        global.client.autoban[senderID] = {
+      // 2. Initialize global spam tracking if missing
+      if (!global.client.autoban) global.client.autoban = {};
+      if (!global.client.autoban[sender]) {
+        global.client.autoban[sender] = {
           timeStart: Date.now(),
           number: 0
         };
-
-        // Notify group and admins
-        api.sendMessage(
-          `${senderID}\nname: ${dataUser.name}\nreason: spam bot ${num} times\n` +
-          `automatically unban after ${timee} seconds\n\nreport sent to admins`,
-          threadID,
-          () => {
-            var idad = global.config.ADMINBOT;
-            for (let ad of idad) {
-              api.sendMessage(
-                `spam ban notification\n\nspam offenders ${num}/${timee}s\n` +
-                `name: ${dataUser.name}\nuser id: ${senderID}\n` +
-                `group ID: ${threadID}\ngroup name: ${datathread.threadName}\n` +
-                `time: ${timeDate}`,
-                ad
-              );
-            }
-          }
-        );
       }
+
+      // 3. Get Prefix
+      // Using optional chaining and OR operators to prevent crashes if data is null
+      const threadSetting = (global.data.threadData && global.data.threadData.get(threadID)) || {};
+      const prefix = threadSetting.PREFIX || global.config.PREFIX;
+
+      // Only count messages that start with the prefix (commands)
+      if (event.body.indexOf(prefix) !== 0) return;
+
+      // 4. Check time window
+      if ((global.client.autoban[sender].timeStart + (timee * 1000)) <= Date.now()) {
+        global.client.autoban[sender] = {
+          timeStart: Date.now(),
+          number: 0
+        };
+      } else {
+        // Increment spam count
+        global.client.autoban[sender].number++;
+
+        // 5. BAN TRIGGER
+        if (global.client.autoban[sender].number >= num) {
+          
+          // Check if already banned to prevent double-execution
+          let dataUser = await Users.getData(sender) || {};
+          let data = dataUser.data || {};
+          if (data && data.banned) return;
+
+          const moment = require("moment-timezone");
+          const timeDate = moment.tz("Asia/Manila").format("DD/MM/YYYY HH:mm:ss");
+
+          // Try to get Group Name safely
+          let threadName = "Unknown Group";
+          try {
+              let threadInfo = await Threads.getData(threadID);
+              if (threadInfo && threadInfo.threadInfo) {
+                  threadName = threadInfo.threadInfo.threadName || "Unknown Group";
+              }
+          } catch (error) {
+              // Intentionally empty to be silent
+          }
+
+          // Apply Ban in Database
+          data.banned = true;
+          data.reason = `Spamming commands (${num} times in ${timee}s)`;
+          data.dateAdded = timeDate;
+
+          await Users.setData(sender, { data });
+          
+          if (global.data.userBanned) {
+            global.data.userBanned.set(sender, {
+              reason: data.reason,
+              dateAdded: data.dateAdded
+            });
+          }
+
+          // Reset local counter
+          global.client.autoban[sender] = {
+            timeStart: Date.now(),
+            number: 0
+          };
+
+          // Notify the Group
+          // We wrap this in a specific try-catch just in case the bot is muted/blocked in the group
+          try {
+            api.sendMessage(
+              `🚫 Auto-Ban Alert\n\nUser: ${dataUser.name || sender}\nReason: Spamming bot ${num} times.\n\n⚠️ You have been banned from using the bot for ${timee / 60} minutes.`,
+              threadID,
+              () => {
+                // Notify Admins
+                try {
+                    var idad = global.config.ADMINBOT;
+                    for (let ad of idad) {
+                    api.sendMessage(
+                        `🚨 Spam Ban Notification\n\n` +
+                        `Name: ${dataUser.name || "Unknown"}\n` +
+                        `ID: ${sender}\n` +
+                        `Group: ${threadName}\n` +
+                        `Time: ${timeDate}\n` +
+                        `Action: Banned for ${timee}s`,
+                        ad
+                    );
+                    }
+                } catch(e) { /* Silent */ }
+              }
+            );
+          } catch (e) { /* Silent */ }
+
+          // 6. AUTOMATIC UNBAN LOGIC - SILENT ERROR HANDLING
+          setTimeout(async () => {
+            try {
+              // Fetch fresh data
+              let unbanDataUser = await Users.getData(sender) || {};
+              let unbanData = unbanDataUser.data || {};
+              
+              // Remove ban flags
+              unbanData.banned = false;
+              unbanData.reason = null;
+              unbanData.dateAdded = null;
+
+              // Save to database
+              await Users.setData(sender, { data: unbanData });
+              
+              // Remove from global cache
+              if (global.data.userBanned) {
+                global.data.userBanned.delete(sender);
+              }
+
+            } catch (e) {
+              // Intentionally empty to be silent. 
+              // If this fails, user stays banned until manual unban, but no error is printed.
+            }
+          }, timee * 1000);
+        }
+      }
+    } catch (masterError) {
+      // ABSOLUTE SILENCE
+      // If ANY part of the code above fails (Threads undefined, API down, Database error),
+      // this block catches it and does absolutely nothing.
+      // This ensures "messenger do not sent error or any problem msg".
+      return;
     }
   }
 };
-
