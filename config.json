@@ -1,11 +1,11 @@
 {
   "facebookAccount": {
     "email": "ahmedzayan102@gmail.com",
-    "password": "910@12340",
-    "2FASecret": "hxhjdjj",
+    "password": "YOUR_PASSWORD_HERE",
+    "2FASecret": "YOUR_2FA_HERE",
     "i_user": "",
-    "proxy": "http://139.59.1.14:8080",
-    "userAgent": "Mozilla/5.0 (Linux; Android 12; M2102J20SG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36",
+    "proxy": "",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
     "intervalGetNewCookie": 1440,
     "notes": "time the system automatically retrieves new cookies"
   },
@@ -67,7 +67,7 @@
     "socket": {
       "enable": true,
       "channelName": "uptime",
-      "verifyToken": ""
+      "verifyToken": "u7w3z8x9" 
     }
   },
   "autoRestart": {
