@@ -85,9 +85,9 @@ module.exports = async (api) => {
 
 
 	// const verifyCodes = {
-	//     fbid: [],
-	//     register: [],
-	//     forgetPass: []
+	// 	fbid: [],
+	// 	register: [],
+	// 	forgetPass: []
 	// };
 
 	eta.configure({
@@ -291,14 +291,20 @@ module.exports = async (api) => {
 			return res.status(500).send(getText("app", "serverError"));
 	});
 
-	const PORT = config.dashBoard.port || config.serverUptime.port || 3001;
+    // ========== IMPORTANT FIX FOR RENDER ==========
+    // Use process.env.PORT provided by Render
+	const PORT = process.env.PORT || config.dashBoard.port || config.serverUptime.port || 3001;
+    // ==============================================
+
 	let dashBoardUrl = `https://${process.env.REPL_OWNER
 		? `${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
 		: process.env.API_SERVER_EXTERNAL == "https://api.glitch.com"
 			? `${process.env.PROJECT_DOMAIN}.glitch.me`
 			: `localhost:${PORT}`}`;
 	dashBoardUrl.includes("localhost") && (dashBoardUrl = dashBoardUrl.replace("https", "http"));
-	await server.listen(PORT);
+	
+    // Listen on the correct PORT
+    await server.listen(PORT);
 	utils.log.info("DASHBOARD", `Dashboard is running: ${dashBoardUrl}`);
 	if (config.serverUptime.socket.enable == true)
 		require("../bot/login/socketIO.js")(server);
@@ -328,4 +334,3 @@ function validateEmail(email) {
 function convertSize(byte) {
 	return byte > 1024 ? byte > 1024 * 1024 ? (byte / 1024 / 1024).toFixed(2) + " MB" : (byte / 1024).toFixed(2) + " KB" : byte + " Byte";
 }
-
