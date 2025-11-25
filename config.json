@@ -59,7 +59,7 @@
     "port": 3000
   },
   "credentials": {
-    "gmailAccount": null,
-    "gmailPassword": null
+    "gmailAccount": {},
+    "gmailPassword": ""
   }
 }
