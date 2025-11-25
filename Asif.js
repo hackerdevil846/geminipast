@@ -47,9 +47,14 @@ function validJSON(pathDir) {
 }
 
 const { NODE_ENV } = process.env;
-const dirConfig = path.normalize(`${__dirname}/config${['production', 'development'].includes(NODE_ENV) ? '.dev.json' : '.json'}`);
-const dirConfigCommands = path.normalize(`${__dirname}/configCommands${['production', 'development'].includes(NODE_ENV) ? '.dev.json' : '.json'}`);
-const dirAccount = path.normalize(`${__dirname}/account${['production', 'development'].includes(NODE_ENV) ? '.dev.txt' : '.txt'}`);
+
+// ————————————————————————————————————————————————————————— //
+// 🟢 FIX: ALWAYS USE STANDARD FILE NAMES (.json / .txt)
+// This prevents the bot from looking for .dev.json in production
+// ————————————————————————————————————————————————————————— //
+const dirConfig = path.normalize(`${__dirname}/config.json`);
+const dirConfigCommands = path.normalize(`${__dirname}/configCommands.json`);
+const dirAccount = path.normalize(`${__dirname}/account.txt`);
 
 for (const pathDir of [dirConfig, dirConfigCommands]) {
 	try {
@@ -223,13 +228,17 @@ if (config.autoRestart) {
 	const OAuth2 = google.auth.OAuth2;
 	const OAuth2_client = new OAuth2(clientId, clientSecret);
 	OAuth2_client.setCredentials({ refresh_token: refreshToken });
-	let accessToken;
+	
+    // Error handling for Google API added
+    let accessToken;
 	try {
 		accessToken = await OAuth2_client.getAccessToken();
 	}
 	catch (err) {
-		throw new Error(getText("Goat", "googleApiTokenExpired"));
+        // Don't crash if Google API fails, just warn
+		log.warn("GOOGLE API", getText("Goat", "googleApiTokenExpired"));
 	}
+    
 	const transporter = nodemailer.createTransport({
 		host: 'smtp.gmail.com',
 		service: 'Gmail',
@@ -272,21 +281,32 @@ if (config.autoRestart) {
 	global.utils.transporter = transporter;
 
 	// ———————————————— CHECK VERSION ———————————————— //
-	const { data: { version } } = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/package.json");
-	const currentVersion = require("./package.json").version;
-	if (compareVersion(version, currentVersion) === 1)
-		utils.log.master("NEW VERSION", getText(
-			"Goat",
-			"newVersionDetected",
-			colors.gray(currentVersion),
-			colors.hex("#eb6a07", version),
-			colors.hex("#eb6a07", "node update")
-		));
+	try {
+		const { data: { version } } = await axios.get("https://raw.githubusercontent.com/ntkhang03/Goat-Bot-V2/main/package.json");
+		const currentVersion = require("./package.json").version;
+		if (compareVersion(version, currentVersion) === 1)
+			utils.log.master("NEW VERSION", getText(
+				"Goat",
+				"newVersionDetected",
+				colors.gray(currentVersion),
+				colors.hex("#eb6a07", version),
+				colors.hex("#eb6a07", "node update")
+			));
+	} catch (e) {
+		// Ignore version check error
+	}
+
 	// —————————— CHECK FOLDER GOOGLE DRIVE —————————— //
-	const parentIdGoogleDrive = await utils.drive.checkAndCreateParentFolder("GoatBot");
-	utils.drive.parentID = parentIdGoogleDrive;
+	try {
+		const parentIdGoogleDrive = await utils.drive.checkAndCreateParentFolder("GoatBot");
+		utils.drive.parentID = parentIdGoogleDrive;
+	} catch (e) {
+		// Ignore drive error
+	}
+
 	// ———————————————————— LOGIN ———————————————————— //
-	require(`./bot/login/login${NODE_ENV === 'development' ? '.dev.js' : '.js'}`);
+    // Always require the production-safe file
+	require(`./bot/login/login.js`);
 })();
 
 function compareVersion(version1, version2) {
