@@ -2,7 +2,7 @@
   "prefix": "/",
   "language": "en",
   "adminBot": [
-    "61571630409265" 
+    "61571630409265"
   ],
   "nickNameBot": "𝑯𝒂𝒏𝒊𝒂 𓆩🖤𓆪",
   "autoRestart": {
@@ -57,5 +57,9 @@
   "dashBoard": {
     "enable": true,
     "port": 3000
+  },
+  "credentials": {
+    "gmailAccount": null,
+    "gmailPassword": null
   }
 }
