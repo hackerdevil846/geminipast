@@ -4,7 +4,7 @@
     "password": "910@12340",
     "2FASecret": "hxhjdjj",
     "i_user": "",
-    "proxy": null,
+    "proxy": "http://152.26.229.52:9443",
     "userAgent": "Mozilla/5.0 (Linux; Android 12; M2102J20SG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/101.0.0.0 Mobile Safari/537.36",
     "intervalGetNewCookie": 1440,
     "notes": "time the system automatically retrieves new cookies"
