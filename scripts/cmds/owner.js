@@ -15,7 +15,7 @@ module.exports = {
         longDescription: {
             en: "Displays owner info in premium dark style"
         },
-        category: "𝐚𝐝𝐦𝐢𝐧",
+        category: "info",
         guide: {
             en: "{p}owner"
         },
