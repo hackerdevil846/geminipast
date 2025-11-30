@@ -19,7 +19,7 @@ const toDarkStyle = (str) => {
 module.exports = {
   config: {
     name: "cmdbackup",
-    aliases: ["cmd", "module"],
+    aliases: [],
     version: "2.0.0", // Updated version
     author: "𝖠𝗌𝗂𝖿 𝖬𝖺𝗁𝗆𝗎𝖽", // Original Author preserved
     countDown: 5,
