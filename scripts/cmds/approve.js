@@ -5,202 +5,192 @@ module.exports = {
     config: {
         name: "approve",
         aliases: [],
-        version: "1.0.2",
-        author: "Asif Mahmud",
+        version: "2.1.0", // Ultra Modified Version
+        author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
         countDown: 5,
-        role: 2,
-        category: "admin",
+        role: 2, // Admin/Owner only
+        category: "𝐬𝐲𝐬𝐭𝐞𝐦",
         shortDescription: {
-            en: "𝖬𝖺𝗇𝖺𝗀𝖾 𝗀𝗋𝗈𝗎𝗉 𝖺𝗉𝗉𝗋𝗈𝗏𝖺𝗅𝗌 𝖿𝗈𝗋 𝖻𝗈𝗍"
+            en: "✅ 𝐌𝐚𝐧𝐚𝐠𝐞 𝐆𝐫𝐨𝐮𝐩 𝐀𝐩𝐩𝐫𝐨𝐯𝐚𝐥𝐬"
         },
         longDescription: {
-            en: "𝖠𝗉𝗉𝗋𝗈𝗏𝖾 𝗈𝗋 𝗆𝖺𝗇𝖺𝗀𝖾 𝗀𝗋𝗈𝗎𝗉𝗌 𝖿𝗈𝗋 𝖻𝗈𝗍 𝗎𝗌𝖺𝗀𝖾"
+            en: "Approve groups, view pending requests, and manage access control with Atomic UI. Includes Auto-Notification."
         },
         guide: {
-            en: "{p}approve [𝗅𝗂𝗌𝗍/𝗉𝖾𝗇𝖽𝗂𝗇𝗀/𝖽𝖾𝗅/𝗁𝖾𝗅𝗉]"
+            en: "{p}approve [list/pending/del/id]\n{p}approve <id> (to approve)\n{p}approve (inside a group to approve it)"
         },
         dependencies: {
             "fs-extra": ""
         }
     },
 
-    onStart: async function({ message, event, args }) {
+    onStart: async function({ message, event, args, api }) {
         try {
-            // Dependency check
-            let fsAvailable = true;
-            try {
-                require("fs-extra");
-            } catch (e) {
-                fsAvailable = false;
-            }
-
-            if (!fsAvailable) {
-                return message.reply("❌ 𝖬𝗂𝗌𝗌𝗂𝗇𝗀 𝖽𝖾𝗉𝖾𝗇𝖽𝖾𝗇𝖼𝗂𝖾𝗌. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗂𝗇𝗌𝗍𝖺𝗅𝗅 𝖿𝗌-𝖾𝗑𝗍𝗋𝖺.");
-            }
-
-            const dataPath = path.join(__dirname, "approvedThreads.json");
-            const dataPending = path.join(__dirname, "pendingThreads.json");
-
-            // Ensure data files exist with proper initialization
-            try {
-                if (!fs.existsSync(dataPath)) {
-                    fs.writeFileSync(dataPath, JSON.stringify([]));
-                    console.log("✅ 𝖢𝗋𝖾𝖺𝗍𝖾𝖽 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽𝖳𝗁𝗋𝖾𝖺𝖽𝗌.𝗃𝗌𝗈𝗇");
-                }
-                if (!fs.existsSync(dataPending)) {
-                    fs.writeFileSync(dataPending, JSON.stringify([]));
-                    console.log("✅ 𝖢𝗋𝖾𝖺𝗍𝖾𝖽 𝗉𝖾𝗇𝖽𝗂𝗇𝗀𝖳𝗁𝗋𝖾𝖺𝖽𝗌.𝗃𝗌𝗈𝗇");
-                }
-            } catch (fileError) {
-                console.error("💥 𝖥𝗂𝗅𝖾 𝖼𝗋𝖾𝖺𝗍𝗂𝗈𝗇 𝖾𝗋𝗋𝗈𝗋:", fileError);
-                return message.reply("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝖼𝗋𝖾𝖺𝗍𝖾 𝖽𝖺𝗍𝖺 𝖿𝗂𝗅𝖾𝗌. 𝖯𝗅𝖾𝖺𝗌𝖾 𝖼𝗁𝖾𝖼𝗄 𝗉𝖾𝗋𝗆𝗂𝗌𝗌𝗂𝗈𝗇𝗌.");
-            }
-
-            let approved = [];
-            let pending = [];
-            
-            // Load data with error handling
-            try {
-                const approvedData = fs.readFileSync(dataPath, "utf8");
-                const pendingData = fs.readFileSync(dataPending, "utf8");
-                
-                approved = JSON.parse(approvedData);
-                pending = JSON.parse(pendingData);
-                
-                // Ensure arrays
-                if (!Array.isArray(approved)) approved = [];
-                if (!Array.isArray(pending)) pending = [];
-                
-            } catch (parseError) {
-                console.error("💥 𝖣𝖺𝗍𝖺 𝗉𝖺𝗋𝗌𝖾 𝖾𝗋𝗋𝗈𝗋:", parseError);
-                // Reset corrupted files
-                approved = [];
-                pending = [];
-                fs.writeFileSync(dataPath, JSON.stringify(approved, null, 2));
-                fs.writeFileSync(dataPending, JSON.stringify(pending, null, 2));
-                console.log("✅ 𝖱𝖾𝗌𝖾𝗍 𝖼𝗈𝗋𝗋𝗎𝗉𝗍𝖾𝖽 𝖽𝖺𝗍𝖺 𝖿𝗂𝗅𝖾𝗌");
-            }
-
+            // --- 1. Setup & Paths ---
             const { threadID } = event;
-            let targetID = args[0] ? args[0].trim() : threadID;
+            const cacheDir = path.join(__dirname, "cache");
+            const approvedPath = path.join(cacheDir, "approvedThreads.json");
+            const pendingPath = path.join(cacheDir, "pendingThreads.json");
 
-            // HELP COMMAND
-            if (args[0] === "help" || args[0] === "h") {
-                const helpMessage = `𝖠𝖯𝖯𝖱𝖮𝖵𝖤 𝖢𝖮𝖬𝖬𝖠𝖭𝖣𝖲
+            // Ensure directory and files exist
+            await fs.ensureDir(cacheDir);
+            if (!fs.existsSync(approvedPath)) await fs.writeJson(approvedPath, []);
+            if (!fs.existsSync(pendingPath)) await fs.writeJson(pendingPath, []);
 
-${global.config.PREFIX + this.config.name} 𝗅𝗂𝗌𝗍 - 𝗏𝗂𝖾𝗐 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗀𝗋𝗈𝗎𝗉𝗌
-${global.config.PREFIX + this.config.name} 𝗉𝖾𝗇𝖽𝗂𝗇𝗀 - 𝗏𝗂𝖾𝗐 𝗉𝖾𝗇𝖽𝗂𝗇𝗀 𝗀𝗋𝗈𝗎𝗉𝗌
-${global.config.PREFIX + this.config.name} 𝖽𝖾𝗅 [𝗂𝖽] - 𝗋𝖾𝗆𝗈𝗏𝖾 𝖿𝗋𝗈𝗆 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽
-${global.config.PREFIX + this.config.name} [𝗂𝖽] - 𝖺𝗉𝗉𝗋𝗈𝗏𝖾 𝖺 𝗀𝗋𝗈𝗎𝗉
+            // Read Data (Async for performance)
+            let approved = await fs.readJson(approvedPath);
+            let pending = await fs.readJson(pendingPath);
 
-𝖢𝗋𝖾𝖺𝗍𝖾𝖽 𝖻𝗒: ${this.config.author}`;
-                return message.reply(helpMessage);
+            // --- 2. Arguments Handling ---
+            const cmd = args[0] ? args[0].toLowerCase() : "";
+            const param = args[1];
+
+            // --- 3. Help Menu ---
+            if (cmd === "help" || cmd === "h") {
+                return message.reply(
+                    `╭──────『 𝐀𝐏𝐏𝐑𝐎𝐕𝐄 』──────╮\n` +
+                    `│\n` +
+                    `│ 🔰 𝐔𝐬𝐚𝐠𝐞:\n` +
+                    `│ • {p}app list [page]\n` +
+                    `│ • {p}app pending [page]\n` +
+                    `│ • {p}app del <id>\n` +
+                    `│ • {p}app <id> (Approve ID)\n` +
+                    `│ • {p}app (Approve current)\n` +
+                    `│\n` +
+                    `│ 📌 𝐒𝐭𝐚𝐭𝐬:\n` +
+                    `│ • Active: ${approved.length}\n` +
+                    `│ • Pending: ${pending.length}\n` +
+                    `│\n` +
+                    `╰──────────────────────────╯`
+                );
             }
 
-            // LIST APPROVED GROUPS
-            if (args[0] === "list" || args[0] === "l") {
-                if (approved.length === 0) {
-                    return message.reply("❌ 𝖭𝗈 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗀𝗋𝗈𝗎𝗉𝗌 𝖿𝗈𝗎𝗇𝖽");
-                }
+            // --- 4. LIST COMMAND (With Real Names & Pagination) ---
+            if (cmd === "list" || cmd === "l") {
+                if (approved.length === 0) return message.reply("❌ 𝐄𝐦𝐩𝐭𝐲: No approved groups found.");
 
-                let msg = `𝖠𝖯𝖯𝖱𝖮𝖵𝖤𝖣 𝖦𝖱𝖮𝖴𝖯𝖲 [${approved.length}]:\n\n`;
-                approved.forEach((id, index) => {
-                    msg += `〘${index + 1}〙 » ${id}\n`;
-                });
+                const page = parseInt(param || args[1]) || 1;
+                const limit = 10;
+                const totalPages = Math.ceil(approved.length / limit);
                 
-                return message.reply(msg);
-            }
+                if (page < 1 || page > totalPages) return message.reply(`❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐏𝐚𝐠𝐞. Total pages: ${totalPages}`);
 
-            // LIST PENDING GROUPS
-            if (args[0] === "pending" || args[0] === "p") {
-                if (pending.length === 0) {
-                    return message.reply("❌ 𝖭𝗈 𝗉𝖾𝗇𝖽𝗂𝗇𝗀 𝗀𝗋𝗈𝗎𝗉𝗌 𝖿𝗈𝗎𝗇𝖽");
-                }
+                const start = (page - 1) * limit;
+                const end = start + limit;
+                const list = approved.slice(start, end);
 
-                let msg = `𝖯𝖤𝖭𝖣𝖨𝖭𝖦 𝖦𝖱𝖮𝖴𝖯𝖲 [${pending.length}]:\n\n`;
-                pending.forEach((id, index) => {
-                    msg += `〘${index + 1}〙 » ${id}\n`;
-                });
+                let msg = `╭──『 𝐀𝐏𝐏𝐑𝐎𝐕𝐄𝐃 [${page}/${totalPages}] 』──╮\n│\n`;
                 
-                return message.reply(msg);
-            }
-
-            // DELETE FROM APPROVED
-            if (args[0] === "del" || args[0] === "d") {
-                const idToRemove = args[1] ? args[1].trim() : threadID;
-                
-                // Validate ID format
-                if (!idToRemove || isNaN(idToRemove)) {
-                    return message.reply("❌ 𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝖦𝗋𝗈𝗎𝗉 𝖨𝖣. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗉𝗋𝗈𝗏𝗂𝖽𝖾 𝖺 𝗏𝖺𝗅𝗂𝖽 𝗇𝗎𝗆𝖾𝗋𝗂𝖼 𝖨𝖣.");
-                }
-
-                if (!approved.includes(idToRemove)) {
-                    return message.reply("❌ 𝖦𝗋𝗈𝗎𝗉 𝗇𝗈𝗍 𝖿𝗈𝗎𝗇𝖽 𝗂𝗇 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗅𝗂𝗌𝗍");
-                }
-
-                approved = approved.filter(id => id !== idToRemove);
-                
-                try {
-                    fs.writeFileSync(dataPath, JSON.stringify(approved, null, 2));
-                    console.log(`✅ 𝖱𝖾𝗆𝗈𝗏𝖾𝖽 𝗀𝗋𝗈𝗎𝗉 ${idToRemove} 𝖿𝗋𝗈𝗆 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗅𝗂𝗌𝗍`);
-                } catch (writeError) {
-                    console.error("💥 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗌𝖺𝗏𝖾 𝖽𝖺𝗍𝖺:", writeError);
-                    return message.reply("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗌𝖺𝗏𝖾 𝖼𝗁𝖺𝗇𝗀𝖾𝗌. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇.");
-                }
-                
-                return message.reply(`✅ 𝖦𝗋𝗈𝗎𝗉 ${idToRemove} 𝗋𝖾𝗆𝗈𝗏𝖾𝖽 𝖿𝗋𝗈𝗆 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗅𝗂𝗌𝗍`);
-            }
-
-            // APPROVE A GROUP
-            if (!isNaN(targetID)) {
-                // Validate target ID
-                if (!targetID || targetID.trim() === "") {
-                    return message.reply("❌ 𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝖦𝗋𝗈𝗎𝗉 𝖨𝖣. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗉𝗋𝗈𝗏𝗂𝖽𝖾 𝖺 𝗏𝖺𝗅𝗂𝖽 𝖨𝖣.");
-                }
-
-                if (approved.includes(targetID)) {
-                    return message.reply("✅ 𝖦𝗋𝗈𝗎𝗉 𝖺𝗅𝗋𝖾𝖺𝖽𝗒 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽");
-                }
-
-                // Add to approved
-                approved.push(targetID);
-                
-                // Remove from pending if it was there
-                if (pending.includes(targetID)) {
-                    pending = pending.filter(id => id !== targetID);
+                // Fetch Names Logic
+                for (let i = 0; i < list.length; i++) {
+                    const tid = list[i];
+                    let name = "Unknown Group";
                     try {
-                        fs.writeFileSync(dataPending, JSON.stringify(pending, null, 2));
-                    } catch (pendingError) {
-                        console.error("💥 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗎𝗉𝖽𝖺𝗍𝖾 𝗉𝖾𝗇𝖽𝗂𝗇𝗀 𝗅𝗂𝗌𝗍:", pendingError);
+                        const tInfo = await api.getThreadInfo(tid);
+                        name = tInfo.threadName || "Unnamed";
+                    } catch (e) {
+                        name = "Bot Kicked/Error";
                     }
+
+                    msg += `│ ${start + i + 1}. ${name.substring(0, 20)}\n`;
+                    msg += `│ 🆔 ${tid}\n│\n`;
                 }
-                
-                try {
-                    fs.writeFileSync(dataPath, JSON.stringify(approved, null, 2));
-                    console.log(`✅ 𝖠𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗀𝗋𝗈𝗎𝗉 ${targetID}`);
-                } catch (writeError) {
-                    console.error("💥 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗌𝖺𝗏𝖾 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗅𝗂𝗌𝗍:", writeError);
-                    return message.reply("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗌𝖺𝗏𝖾 𝖺𝗉𝗉𝗋𝗈𝗏𝖺𝗅. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇.");
-                }
-                
-                return message.reply(`✅ 𝖦𝗋𝗈𝗎𝗉 ${targetID} 𝖺𝗉𝗉𝗋𝗈𝗏𝖾𝖽 𝗌𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒`);
+                msg += `╰──────────────────────────╯`;
+                return message.reply(msg);
             }
 
-            // DEFAULT: SHOW HELP
-            return message.reply(`❌ 𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝖼𝗈𝗆𝗆𝖺𝗇𝖽. 𝖴𝗌𝖾 ${global.config.PREFIX}approve 𝗁𝖾𝗅𝗉 𝖿𝗈𝗋 𝗂𝗇𝗌𝗍𝗋𝗎𝖼𝗍𝗂𝗈𝗇𝗌`);
+            // --- 5. PENDING COMMAND (With Pagination) ---
+            if (cmd === "pending" || cmd === "p") {
+                if (pending.length === 0) return message.reply("✅ 𝐂𝐥𝐞𝐚𝐧: No pending requests.");
+
+                const page = parseInt(param || args[1]) || 1;
+                const limit = 10;
+                const totalPages = Math.ceil(pending.length / limit);
+                
+                if (page < 1 || page > totalPages) return message.reply(`❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐏𝐚𝐠𝐞. Total pages: ${totalPages}`);
+
+                const start = (page - 1) * limit;
+                const list = pending.slice(start, start + limit);
+
+                let msg = `╭──『 𝐏𝐄𝐍𝐃𝐈𝐍𝐆 [${page}/${totalPages}] 』──╮\n│\n`;
+                for (let i = 0; i < list.length; i++) {
+                    const tid = list[i];
+                    msg += `│ ${start + i + 1}. ID: ${tid}\n`;
+                }
+                msg += `│\n╰──────────────────────────╯`;
+                return message.reply(msg);
+            }
+
+            // --- 6. DELETE COMMAND ---
+            if (cmd === "del" || cmd === "remove" || cmd === "d") {
+                const targetID = param || threadID; // Default to current thread if no ID given
+                
+                if (!approved.includes(targetID)) {
+                    return message.reply("❌ 𝐄𝐫𝐫𝐨𝐫: This group is not in the approved list.");
+                }
+
+                const newApproved = approved.filter(id => id !== targetID);
+                await fs.writeJson(approvedPath, newApproved, { spaces: 2 });
+
+                return message.reply(`🗑️ 𝐑𝐞𝐦𝐨𝐯𝐞𝐝: Group ${targetID} has been removed from approved list.`);
+            }
+
+            // --- 7. APPROVE COMMAND ---
+            // If the command is not list/pending/del, treat it as an ID to approve
+            let targetID = cmd;
+            
+            // Check if cmd is empty (User typed just "approve") -> Approve Current Group
+            if (!targetID || targetID === "") {
+                targetID = threadID;
+            }
+
+            // Validate ID (Must be numeric)
+            if (isNaN(targetID)) {
+                return message.reply(`❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐈𝐃. Use: ${global.config.PREFIX}approve <threadID>`);
+            }
+
+            // Check duplicate
+            if (approved.includes(targetID)) {
+                return message.reply("⚠️ 𝐀𝐥𝐫𝐞𝐚𝐝𝐲 𝐀𝐩𝐩𝐫𝐨𝐯𝐞𝐝: This group is already in the database.");
+            }
+
+            // Add to Approved List
+            approved.push(targetID);
+            await fs.writeJson(approvedPath, approved, { spaces: 2 });
+
+            // Remove from Pending if exists
+            if (pending.includes(targetID)) {
+                const newPending = pending.filter(id => id !== targetID);
+                await fs.writeJson(pendingPath, newPending, { spaces: 2 });
+            }
+
+            // Success Message to Admin
+            await message.reply(
+                `✅ 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐀𝐩𝐩𝐫𝐨𝐯𝐞𝐝!\n` +
+                `━━━━━━━━━━━━━━━━━━\n` +
+                `🆔 𝐓𝐈𝐃: ${targetID}\n` +
+                `📂 𝐓𝐨𝐭𝐚𝐥 𝐀𝐩𝐩𝐫𝐨𝐯𝐞𝐝: ${approved.length}`
+            );
+
+            // --- 8. Auto Notification to the Group ---
+            api.sendMessage(
+                `╭──────『 𝐀𝐏𝐏𝐑𝐎𝐕𝐄𝐃 』──────╮\n` +
+                `│\n` +
+                `│ ✅ 𝐂𝐨𝐧𝐠𝐫𝐚𝐭𝐮𝐥𝐚𝐭𝐢𝐨𝐧𝐬!\n` +
+                `│ This group has been approved\n` +
+                `│ by the administrator.\n` +
+                `│\n` +
+                `│ 🤖 𝐁𝐨𝐭 is now fully active.\n` +
+                `│\n` +
+                `╰──────────────────────────╯`, 
+                targetID
+            ).catch((e) => {
+                console.log(`Could not send notification to ${targetID} (Bot might not be in group)`);
+            });
 
         } catch (error) {
-            console.error("💥 𝖠𝗉𝗉𝗋𝗈𝗏𝖾 𝖼𝗈𝗆𝗆𝖺𝗇𝖽 𝖾𝗋𝗋𝗈𝗋:", error);
-            
-            let errorMessage = "❌ 𝖠𝗇 𝖾𝗋𝗋𝗈𝗋 𝗈𝖼𝖼𝗎𝗋𝗋𝖾𝖽. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇 𝗅𝖺𝗍𝖾𝗋.";
-            
-            if (error.message.includes('permission') || error.code === 'EACCES') {
-                errorMessage = "❌ 𝖯𝖾𝗋𝗆𝗂𝗌𝗌𝗂𝗈𝗇 𝖾𝗋𝗋𝗈𝗋. 𝖯𝗅𝖾𝖺𝗌𝖾 𝖼𝗁𝖾𝖼𝗄 𝖿𝗂𝗅𝖾 𝗉𝖾𝗋𝗆𝗂𝗌𝗌𝗂𝗈𝗇𝗌.";
-            } else if (error.message.includes('JSON')) {
-                errorMessage = "❌ 𝖣𝖺𝗍𝖺 𝖼𝗈𝗋𝗋𝗎𝗉𝗍𝗂𝗈𝗇 𝖾𝗋𝗋𝗈𝗋. 𝖣𝖺𝗍𝖺 𝖿𝗂𝗅𝖾𝗌 𝗁𝖺𝗏𝖾 𝖻𝖾𝖾𝗇 𝗋𝖾𝗌𝖾𝗍.";
-            }
-            
-            await message.reply(errorMessage);
+            console.error("Approve Error:", error);
+            message.reply("❌ 𝐂𝐫𝐢𝐭𝐢𝐜𝐚𝐥 𝐄𝐫𝐫𝐨𝐫: " + error.message);
         }
     }
 };
