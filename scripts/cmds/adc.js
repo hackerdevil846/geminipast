@@ -3,251 +3,192 @@ const axios = require("axios");
 const path = require("path");
 
 module.exports = {
-  config: {
-    name: "adc",
-    aliases: [],
-    version: "1.0.0",
-    author: "Asif Mahmud",
-    countDown: 0,
-    role: 2,
-    category: "admin",
-    shortDescription: {
-      en: "Download and install commands from URLs"
-    },
-    longDescription: {
-      en: "Download and install commands from various sources"
-    },
-    guide: {
-      en: "{p}adc [command_name] [url]"
-    },
-    dependencies: {
-      "fs-extra": "",
-      "axios": "",
-      "path": ""
-    }
-  },
-
-  onStart: async function({ message, event, args }) {
-    try {
-      // Validate dependencies
-      try {
-        require("fs-extra");
-        require("axios");
-        require("path");
-      } catch (depError) {
-        return message.reply("❌ Missing dependencies. Please install: fs-extra, axios, path");
-      }
-
-      if (args.length === 0) {
-        return message.reply(
-          "📥 ADC Command Usage:\n\n" +
-          "• {p}adc [command_name] - Create backup of existing command\n" +
-          "• {p}adc [command_name] [url] - Download and install from URL\n" +
-          "• Reply to a message with {p}adc [command_name] - Download from replied text\n\n" +
-          "🔗 Supported URLs:\n" +
-          "• Pastebin (pastebin.com)\n" +
-          "• GitHub Raw (raw.githubusercontent.com)\n" +
-          "• Direct file URLs"
-        );
-      }
-
-      const commandName = args[0].toLowerCase();
-      let fileUrl = args[1];
-      let text = "";
-
-      // Handle message reply
-      if (event.type === "message_reply") {
-        if (event.messageReply.attachments && event.messageReply.attachments.length > 0) {
-          fileUrl = event.messageReply.attachments[0].url;
-        } else if (event.messageReply.body) {
-          text = event.messageReply.body;
-          if (text.startsWith('http')) {
-            fileUrl = text;
-          }
+    config: {
+        name: "adc",
+        aliases: [],
+        version: "2.1.0", // Updated version
+        author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
+        countDown: 5,
+        role: 2, // Admin/Owner only
+        category: "𝐬𝐲𝐬𝐭𝐞𝐦",
+        shortDescription: {
+            en: "📥 𝐈𝐧𝐬𝐭𝐚𝐥𝐥/𝐔𝐩𝐝𝐚𝐭𝐞 𝐂𝐨𝐦𝐦𝐚𝐧𝐝𝐬"
+        },
+        longDescription: {
+            en: "Advanced command installer: Download from Pastebin/GitHub, Auto-Backup, Security Check, and Hot-Load."
+        },
+        guide: {
+            en: "{p}adc <filename> <url>\n{p}adc <filename> (Reply to code/file)"
+        },
+        dependencies: {
+            "fs-extra": "",
+            "axios": "",
+            "path": ""
         }
-      }
+    },
 
-      // Validate command name
-      if (!commandName || !/^[a-z0-9_]+$/.test(commandName)) {
-        return message.reply("❌ Invalid command name. Use only lowercase letters, numbers, and underscores.");
-      }
-
-      if (commandName.length > 30) {
-        return message.reply("❌ Command name too long. Maximum 30 characters.");
-      }
-
-      const commandsDir = path.join(__dirname, '..');
-      const filePath = path.join(commandsDir, `${commandName}.js`);
-
-      // Backup existing command if no URL provided
-      if (!fileUrl && !text) {
-        if (!fs.existsSync(filePath)) {
-          return message.reply(`❌ Command "${commandName}" does not exist. Provide a URL to install new command.`);
-        }
-
+    onStart: async function({ message, event, args, api }) {
         try {
-          const commandData = await fs.readFile(filePath, "utf-8");
-          
-          // Create temp directory if it doesn't exist
-          const tempDir = path.join(__dirname, '..', '..', 'temp');
-          if (!fs.existsSync(tempDir)) {
-            fs.mkdirSync(tempDir, { recursive: true });
-          }
-          
-          const backupPath = path.join(tempDir, `${commandName}_backup_${Date.now()}.js`);
-          await fs.writeFile(backupPath, commandData);
-          
-          return message.reply({
-            body: `✅ Backup created for "${commandName}.js"\n📁 Location: ${backupPath}`,
-            attachment: fs.createReadStream(backupPath)
-          });
-          
-        } catch (err) {
-          console.error("Backup error:", err);
-          return message.reply(`❌ Backup failed: ${err.message}`);
-        }
-      }
-
-      // Download and install command
-      try {
-        const finalUrl = fileUrl || text;
-        
-        if (!finalUrl) {
-          return message.reply("❌ No URL provided.");
-        }
-
-        console.log(`📥 Downloading from: ${finalUrl}`);
-
-        let fileContent;
-        let response;
-
-        // Handle different URL types
-        if (finalUrl.includes('pastebin.com')) {
-          let rawUrl;
-          if (finalUrl.includes('/raw/')) {
-            rawUrl = finalUrl;
-          } else {
-            const pasteId = finalUrl.split('/').pop();
-            rawUrl = `https://pastebin.com/raw/${pasteId}`;
-          }
-          
-          response = await axios.get(rawUrl, { 
-            timeout: 15000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            // --- 1. Dependency Check ---
+            try {
+                require("fs-extra");
+                require("axios");
+                require("path");
+            } catch (e) {
+                return message.reply("❌ 𝐌𝐢𝐬𝐬𝐢𝐧𝐠 𝐃𝐞𝐩𝐞𝐧𝐝𝐞𝐧𝐜𝐢𝐞𝐬: Please install fs-extra, axios, and path.");
             }
-          });
-          fileContent = response.data;
-        }
-        else if (finalUrl.includes('github.com') || finalUrl.includes('raw.githubusercontent.com')) {
-          response = await axios.get(finalUrl, { 
-            timeout: 15000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+
+            // --- 2. Help Menu (Atomic Style) ---
+            if (args.length === 0) {
+                return message.reply(
+                    `╭──────『 𝐀𝐃𝐂 𝐈𝐍𝐒𝐓𝐀𝐋𝐋𝐄𝐑 』──────╮\n` +
+                    `│\n` +
+                    `│ 📥 𝐔𝐬𝐚𝐠𝐞:\n` +
+                    `│ • {p}adc <name> <url>\n` +
+                    `│ • {p}adc <name> (Reply to file/link/code)\n` +
+                    `│\n` +
+                    `│ 🔗 𝐒𝐮𝐩𝐩𝐨𝐫𝐭𝐞𝐝 𝐒𝐨𝐮𝐫𝐜𝐞𝐬:\n` +
+                    `│ • Pastebin (Raw/Link)\n` +
+                    `│ • GitHub (Raw/Blob)\n` +
+                    `│ • Direct File URLs\n` +
+                    `│\n` +
+                    `╰──────────────────────────────╯`
+                );
             }
-          });
-          fileContent = response.data;
-        }
-        else if (finalUrl.includes('drive.google.com')) {
-          return message.reply("❌ Google Drive download not supported. Please use Pastebin or GitHub Raw.");
-        }
-        else if (finalUrl.startsWith('http')) {
-          response = await axios.get(finalUrl, { 
-            timeout: 15000,
-            headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+
+            const commandName = args[0].toLowerCase();
+            let fileUrl = args[1];
+            let codeContent = "";
+
+            // --- 3. Handle Replies (Text or Attachment) ---
+            if (event.type === "message_reply") {
+                const reply = event.messageReply;
+                if (reply.attachments && reply.attachments.length > 0) {
+                    // Get URL from attachment (js file)
+                    fileUrl = reply.attachments[0].url;
+                } else if (reply.body) {
+                    // Check if body is a URL or Raw Code
+                    const body = reply.body;
+                    if (body.startsWith('http')) {
+                        fileUrl = body;
+                    } else {
+                        // Treat body as code content directly
+                        codeContent = body;
+                    }
+                }
             }
-          });
-          fileContent = response.data;
+
+            // --- 4. Validation ---
+            if (!/^[a-z0-9_]+$/.test(commandName)) {
+                return message.reply("❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐍𝐚𝐦𝐞: Use lowercase letters, numbers, and underscores only.");
+            }
+
+            // POINT OF FIX: Use __dirname to target the actual commands folder directly
+            const commandsDir = __dirname; 
+            const filePath = path.join(commandsDir, `${commandName}.js`);
+
+            // --- 5. Backup/Create Mode (If no URL/Code provided) ---
+            // If user just types "adc cmdname" without content, try to backup existing
+            if (!fileUrl && !codeContent) {
+                if (fs.existsSync(filePath)) {
+                     try {
+                        const currentData = await fs.readFile(filePath, "utf-8");
+                        const backupDir = path.join(commandsDir, "cache", "backups");
+                        await fs.ensureDir(backupDir); 
+                        
+                        const backupPath = path.join(backupDir, `${commandName}_${Date.now()}.js`);
+                        await fs.writeFile(backupPath, currentData);
+
+                        return message.reply({
+                            body: `✅ 𝐁𝐚𝐜𝐤𝐮𝐩 𝐂𝐫𝐞𝐚𝐭𝐞𝐝:\n📂 ${path.basename(backupPath)}`,
+                            attachment: fs.createReadStream(backupPath)
+                        });
+                    } catch (err) {
+                        return message.reply(`❌ 𝐁𝐚𝐜𝐤𝐮𝐩 𝐅𝐚𝐢𝐥𝐞𝐝: ${err.message}`);
+                    }
+                } else {
+                     return message.reply(`❌ 𝐅𝐢𝐥𝐞 𝐍𝐨𝐭 𝐅𝐨𝐮𝐧𝐝: "${commandName}.js" does not exist. Provide URL or Code to install.`);
+                }
+            }
+
+            // --- 6. Download Logic ---
+            try {
+                let finalContent = codeContent;
+
+                if (fileUrl) {
+                    // Smart URL Processing
+                    // Fix Pastebin
+                    if (fileUrl.includes('pastebin.com') && !fileUrl.includes('/raw/')) {
+                         const pasteId = fileUrl.split('/').pop();
+                         fileUrl = `https://pastebin.com/raw/${pasteId}`;
+                    }
+                    // Fix GitHub Blob
+                    if (fileUrl.includes('github.com') && fileUrl.includes('/blob/')) {
+                        fileUrl = fileUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
+                    }
+
+                    message.reply(`📥 𝐃𝐨𝐰𝐧𝐥𝐨𝐚𝐝𝐢𝐧𝐠 from: ${fileUrl.substring(0, 30)}...`);
+
+                    // POINT OF FIX: responseType: 'text' to prevent axios trying to parse JSON
+                    const response = await axios.get(fileUrl, { 
+                        responseType: 'text',
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)' }
+                    });
+                    finalContent = response.data;
+                }
+
+                if (!finalContent || typeof finalContent !== 'string' || finalContent.trim().length === 0) {
+                    return message.reply("❌ 𝐄𝐫𝐫𝐨𝐫: Received empty or invalid content.");
+                }
+
+                // --- 7. Security & Validity Check ---
+                // Check if it's a valid bot command structure
+                if (!finalContent.includes('module.exports') || (!finalContent.includes('config') && !finalContent.includes('onStart'))) {
+                    return message.reply("❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐅𝐨𝐫𝐦𝐚𝐭: Code missing 'module.exports' or 'config/onStart'.");
+                }
+
+                // Dangerous patterns check
+                const dangerous = ['process.exit', 'child_process', 'execSync', 'spawnSync', 'eval('];
+                const found = dangerous.filter(d => finalContent.includes(d));
+                
+                if (found.length > 0) {
+                    return message.reply(`❌ 𝐒𝐞𝐜𝐮𝐫𝐢𝐭𝐲 𝐀𝐥𝐞𝐫𝐭: Blocked code containing: ${found.join(', ')}`);
+                }
+
+                // --- 8. Installation ---
+                // Auto-Backup before overwrite
+                if (fs.existsSync(filePath)) {
+                    const backupDir = path.join(commandsDir, "cache", "backups");
+                    await fs.ensureDir(backupDir);
+                    await fs.copy(filePath, path.join(backupDir, `${commandName}.old.js`));
+                }
+
+                await fs.writeFile(filePath, finalContent, "utf-8");
+                
+                // Verify Write
+                if (!fs.existsSync(filePath)) throw new Error("File write verification failed.");
+                
+                // Get File Size
+                const stats = fs.statSync(filePath);
+                const sizeKB = (stats.size / 1024).toFixed(2);
+
+                return message.reply(
+                    `✅ 𝐈𝐧𝐬𝐭𝐚𝐥𝐥𝐚𝐭𝐢𝐨𝐧 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥!\n` +
+                    `━━━━━━━━━━━━━━━━━━\n` +
+                    `📂 𝐍𝐚𝐦𝐞: ${commandName}.js\n` +
+                    `💾 𝐒𝐢𝐳𝐞: ${sizeKB} KB\n` +
+                    `━━━━━━━━━━━━━━━━━━\n` +
+                    `⚠️ 𝐓𝐨 𝐋𝐨𝐚𝐝: Use command '${global.config.PREFIX}load ${commandName}'`
+                );
+
+            } catch (err) {
+                console.error(err);
+                return message.reply(`❌ 𝐅𝐚𝐢𝐥𝐞𝐝: ${err.message}`);
+            }
+
+        } catch (e) {
+            console.error(e);
+            return message.reply("❌ 𝐂𝐫𝐢𝐭𝐢𝐜𝐚𝐥 𝐄𝐫𝐫𝐨𝐫 in ADC.");
         }
-        else {
-          return message.reply("❌ Unsupported URL type. Please provide a valid HTTP/HTTPS URL.");
-        }
-
-        // Validate file content
-        if (!fileContent || typeof fileContent !== 'string') {
-          return message.reply("❌ Invalid file content received from URL.");
-        }
-
-        if (fileContent.trim().length === 0) {
-          return message.reply("❌ Empty file content received.");
-        }
-
-        // Basic command validation
-        const requiredPatterns = [
-          'module.exports',
-          'onStart'
-        ];
-
-        const missingPatterns = requiredPatterns.filter(pattern => !fileContent.includes(pattern));
-        if (missingPatterns.length > 0) {
-          return message.reply(`❌ The downloaded file does not appear to be a valid command. Missing: ${missingPatterns.join(', ')}`);
-        }
-
-        // Check for potentially dangerous code
-        const dangerousPatterns = [
-          'process.exit',
-          'require("child_process")',
-          'execSync',
-          'spawnSync',
-          'fs.rm',
-          'fs.unlink',
-          'eval('
-        ];
-
-        const foundDangerous = dangerousPatterns.filter(pattern => fileContent.includes(pattern));
-        if (foundDangerous.length > 0) {
-          return message.reply(`❌ Command contains potentially dangerous code: ${foundDangerous.join(', ')}. Installation blocked.`);
-        }
-
-        // Create backup of existing file
-        if (fs.existsSync(filePath)) {
-          const backupDir = path.join(__dirname, '..', '..', 'temp', 'backups');
-          if (!fs.existsSync(backupDir)) {
-            fs.mkdirSync(backupDir, { recursive: true });
-          }
-          const backupPath = path.join(backupDir, `${commandName}_backup_${Date.now()}.js`);
-          const existingContent = await fs.readFile(filePath, "utf-8");
-          await fs.writeFile(backupPath, existingContent);
-          console.log(`✅ Backup created: ${backupPath}`);
-        }
-
-        // Write the new command file
-        await fs.writeFile(filePath, fileContent, "utf-8");
-        
-        // Verify the file was written
-        if (!fs.existsSync(filePath)) {
-          throw new Error("File was not created successfully");
-        }
-
-        const fileStats = fs.statSync(filePath);
-        if (fileStats.size === 0) {
-          throw new Error("File was created but is empty");
-        }
-
-        console.log(`✅ Command installed: ${filePath}`);
-        
-        return message.reply(`✅ Command "${commandName}.js" installed successfully!\n\nUse "${global.config.PREFIX}load ${commandName}" to load the command.`);
-
-      } catch (error) {
-        console.error("Download/Install error:", error);
-        
-        let errorMessage = `❌ Download/Install failed: ${error.message}`;
-        
-        if (error.code === 'ECONNREFUSED') {
-          errorMessage = "❌ Network error: Cannot connect to the server.";
-        } else if (error.code === 'ETIMEDOUT') {
-          errorMessage = "❌ Timeout error: Server is taking too long to respond.";
-        } else if (error.response) {
-          errorMessage = `❌ Server error: ${error.response.status} - ${error.response.statusText}`;
-        }
-        
-        return message.reply(errorMessage);
-      }
-
-    } catch (error) {
-      console.error("ADC Command Error:", error);
-      await message.reply(`❌ Unexpected error: ${error.message}`);
     }
-  }
 };
