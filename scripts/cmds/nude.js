@@ -10,7 +10,7 @@ module.exports = {
 		role: 2,
 		shortDescription: "send you pic of nude",
 		longDescription: "sends u pic of girls nude",
-		category: "18+",
+		category: "🔞 18+",
 		guide: "{pn}",
 		dependencies: {
 			"axios": ""
