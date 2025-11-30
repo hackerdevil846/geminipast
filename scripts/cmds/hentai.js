@@ -10,7 +10,7 @@ module.exports = {
         author: "Asif Mahmud",
         countDown: 60,
         role: 0,
-        category: "18+",
+        category: "🔞 18+",
         shortDescription: {
             en: "Get hentai video"
         },
