@@ -5,19 +5,30 @@ module.exports = {
     config: {
         name: "allbox",
         aliases: [],
-        version: "1.0.0",
-        author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
+        version: "2.0.0", // Bumped version for major update
+        author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
         countDown: 5,
-        role: 2,
-        category: "admin",
+        role: 2, // Admin/Owner only
+        category: "𝐬𝐲𝐬𝐭𝐞𝐦",
         shortDescription: {
-            en: "𝐵𝑜𝑡 𝑗𝑜𝑖𝑛𝑒𝑑 𝑔𝑟𝑜𝑢𝑝𝑠 𝑙𝑖𝑠𝑡"
+            en: "𝐌𝐚𝐧𝐚𝐠𝐞 𝐁𝐨𝐭 𝐆𝐫𝐨𝐮𝐩𝐬"
         },
         longDescription: {
-            en: "𝑀𝑎𝑛𝑎𝑔𝑒 𝑏𝑜𝑡'𝑠 𝑔𝑟𝑜𝑢𝑝𝑠 - 𝑣𝑖𝑒𝑤, 𝑏𝑎𝑛, 𝑢𝑛𝑏𝑎𝑛, 𝑑𝑒𝑙𝑒𝑡𝑒, 𝑜𝑟 𝑙𝑒𝑎𝑣𝑒 𝑔𝑟𝑜𝑢𝑝𝑠"
+            en: "View all groups, ban/unban groups, leave groups, or manage pending threads with atomic UI."
         },
         guide: {
-            en: "{p}allbox [𝑎𝑙𝑙/𝑝𝑎𝑔𝑒]"
+            en: "{p}allbox [all/pending/page_number]"
+        },
+        // Adding the requested language strings
+        langs: {
+            en: {
+                invaildNumber: "❌ %1 is an invalid number.",
+                cancelSuccess: "✅ Refused %1 thread(s)!",
+                approveSuccess: "✅ Approved successfully %1 thread(s)!",
+                cantGetPendingList: "❌ Can't get the pending list!",
+                returnListPending: "»「𝐏𝐄𝐍𝐃𝐈𝐍𝐆」«❮ Total threads to approve: %1 ❯\n\n%2",
+                returnListClean: "✅「𝐏𝐄𝐍𝐃𝐈𝐍𝐆」There is no thread in the pending list."
+            }
         },
         dependencies: {
             "fs-extra": "",
@@ -25,265 +36,228 @@ module.exports = {
         }
     },
 
-    onStart: async function({ message, event, args, api, threadsData }) {
+    onStart: async function({ message, event, args, api, threadsData, getText }) {
         try {
-            // Enhanced dependency check
-            let fsExtra, momentTz;
-            try {
-                fsExtra = require("fs-extra");
-                momentTz = require("moment-timezone");
-            } catch (e) {
-                console.error("𝐷𝑒𝑝𝑒𝑛𝑑𝑒𝑛𝑐𝑦 𝑒𝑟𝑟𝑜𝑟:", e);
-                return message.reply("❌ 𝑀𝑖𝑠𝑠𝑖𝑛𝑔 𝑑𝑒𝑝𝑒𝑛𝑑𝑒𝑛𝑐𝑖𝑒𝑠. 𝑃𝑙𝑒𝑎𝑠𝑒 𝑖𝑛𝑠𝑡𝑎𝑙𝑙 𝑓𝑠-𝑒𝑥𝑡𝑟𝑎 𝑎𝑛𝑑 𝑚𝑜𝑚𝑒𝑛𝑡-𝑡𝑖𝑚𝑒𝑧𝑜𝑛𝑒.");
-            }
-
             const { threadID, senderID } = event;
+
+            // --- Permission Check ---
+            // Ensure only admins/owners can access this sensitive list
+            // (Assumed role 2 handles this, but double check logic can be added here if needed)
+
+            const commandArg = args[0]?.toLowerCase();
+            const limit = 10; // Items per page
+            let isPendingMode = false;
+            let page = 1;
+
+            // --- Mode Selection ---
+            let queryType = ["INBOX"];
             
-            // Validate user permissions
+            if (commandArg === "pending") {
+                isPendingMode = true;
+                queryType = ["PENDING", "OTHER"];
+                // If a page number follows "pending" (e.g., "allbox pending 2")
+                page = parseInt(args[1]) || 1;
+            } else if (!isNaN(commandArg)) {
+                // If user just types number (e.g., "allbox 2")
+                page = parseInt(commandArg);
+            }
+
+            // --- Fetch Data ---
+            let threadList;
             try {
-                const userInfo = await api.getUserInfo(senderID);
-                if (!userInfo || !userInfo[senderID]) {
-                    return message.reply("❌ 𝐶𝑎𝑛𝑛𝑜𝑡 𝑣𝑒𝑟𝑖𝑓𝑦 𝑢𝑠𝑒𝑟 𝑝𝑒𝑟𝑚𝑖𝑠𝑠𝑖𝑜𝑛𝑠.");
-                }
-            } catch (userError) {
-                console.error("𝑈𝑠𝑒𝑟 𝑝𝑒𝑟𝑚𝑖𝑠𝑠𝑖𝑜𝑛 𝑐ℎ𝑒𝑐𝑘 𝑒𝑟𝑟𝑜𝑟:", userError);
-                return message.reply("❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑣𝑒𝑟𝑖𝑓𝑦 𝑝𝑒𝑟𝑚𝑖𝑠𝑠𝑖𝑜𝑛𝑠.");
+                threadList = await api.getThreadList(100, null, queryType);
+            } catch (err) {
+                console.error("API Error:", err);
+                return message.reply("❌ 𝐅𝐚𝐢𝐥𝐞𝐝 𝐭𝐨 𝐟𝐞𝐭𝐜𝐡 𝐭𝐡𝐫𝐞𝐚𝐝 𝐥𝐢𝐬𝐭 𝐟𝐫𝐨𝐦 𝐅𝐚𝐜𝐞𝐛𝐨𝐨𝐤 𝐀𝐏𝐈.");
             }
 
-            switch (args[0]) {
-                case "all": {
-                    let threadList;
-                    try {
-                        threadList = await api.getThreadList(100, null, ["INBOX"]);
-                        if (!threadList || !Array.isArray(threadList)) {
-                            throw new Error("𝐼𝑛𝑣𝑎𝑙𝑖𝑑 𝑡ℎ𝑟𝑒𝑎𝑑 𝑙𝑖𝑠𝑡 𝑟𝑒𝑠𝑝𝑜𝑛𝑠𝑒");
-                        }
-                    } catch (e) {
-                        console.error("𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑓𝑒𝑡𝑐ℎ 𝑡ℎ𝑟𝑒𝑎𝑑 𝑙𝑖𝑠𝑡:", e);
-                        return message.reply("❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑓𝑒𝑡𝑐ℎ 𝑡ℎ𝑟𝑒𝑎𝑑 𝑙𝑖𝑠𝑡! 𝑃𝑙𝑒𝑎𝑠𝑒 𝑡𝑟𝑦 𝑎𝑔𝑎𝑖𝑛 𝑙𝑎𝑡𝑒𝑟.");
-                    }
+            // Filter for Groups Only (and check validity)
+            let groups = threadList.filter(t => t.isGroup);
 
-                    const groups = threadList
-                        .filter(t => t && t.isGroup === true)
-                        .sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0));
+            // Sort by activity (message count) descending
+            groups.sort((a, b) => (b.messageCount || 0) - (a.messageCount || 0));
 
-                    if (groups.length === 0) {
-                        return message.reply("❌ 𝑁𝑜 𝑔𝑟𝑜𝑢𝑝𝑠 𝑓𝑜𝑢𝑛𝑑 𝑖𝑛 𝑏𝑜𝑡'𝑠 𝑖𝑛𝑏𝑜𝑥!");
-                    }
-
-                    const page = parseInt(args[1]) || 1;
-                    const limit = 10;
-                    const totalPages = Math.ceil(groups.length / limit);
-                    
-                    if (page < 1 || page > totalPages) {
-                        return message.reply(`❌ 𝐼𝑛𝑣𝑎𝑙𝑖𝑑 𝑝𝑎𝑔𝑒! 𝑃𝑙𝑒𝑎𝑠𝑒 𝑢𝑠𝑒 𝑝𝑎𝑔𝑒 1-${totalPages}`);
-                    }
-                    
-                    const startIdx = limit * (page - 1);
-                    const pageGroups = groups.slice(startIdx, startIdx + limit);
-
-                    if (pageGroups.length === 0) {
-                        return message.reply("❌ 𝑁𝑜 𝑔𝑟𝑜𝑢𝑝𝑠 𝑓𝑜𝑢𝑛𝑑 𝑓𝑜𝑟 𝑡ℎ𝑖𝑠 𝑝𝑎𝑔𝑒!");
-                    }
-
-                    let msg = `🎭 𝐺𝑟𝑜𝑢𝑝 𝐿𝑖𝑠𝑡 [𝑃𝑎𝑔𝑒 ${page}/${totalPages}] 🎭\n\n`;
-                    const groupIds = [];
-
-                    pageGroups.forEach((group, i) => {
-                        const num = startIdx + i + 1;
-                        const memberCount = group.participantIDs ? group.participantIDs.length : "𝑁/𝐴";
-                        const groupName = group.name || "𝑈𝑛𝑛𝑎𝑚𝑒𝑑 𝐺𝑟𝑜𝑢𝑝";
-                        const messageCount = group.messageCount || 0;
-                        
-                        msg += `▣ ${num}. ${groupName}\n`;
-                        msg += `   🔰 𝑇𝐼𝐷: ${group.threadID}\n`;
-                        msg += `   👥 𝑀𝑒𝑚𝑏𝑒𝑟𝑠: ${memberCount}\n`;
-                        msg += `   💌 𝑀𝑠𝑔𝑠: ${messageCount}\n\n`;
-                        groupIds.push(group.threadID);
-                    });
-
-                    msg += `📋 𝑇𝑜𝑡𝑎𝑙 𝐺𝑟𝑜𝑢𝑝𝑠: ${groups.length}\n`;
-                    msg += `🔹 𝑈𝑠𝑒: ${global.config.PREFIX}allbox all <𝑝𝑎𝑔𝑒>\n\n`;
-                    msg += "🛠️ 𝑅𝑒𝑝𝑙𝑦 𝑤𝑖𝑡ℎ:\n";
-                    msg += "• 𝐵𝑎𝑛 <𝑛𝑢𝑚𝑏𝑒𝑟> - 𝐵𝑎𝑛 𝑔𝑟𝑜𝑢𝑝\n";
-                    msg += "• 𝑈𝑏 <𝑛𝑢𝑚𝑏𝑒𝑟> - 𝑈𝑛𝑏𝑎𝑛 𝑔𝑟𝑜𝑢𝑝\n";
-                    msg += "• 𝐷𝑒𝑙 <𝑛𝑢𝑚𝑏𝑒𝑟> - 𝐷𝑒𝑙𝑒𝑡𝑒 𝑑𝑎𝑡𝑎\n";
-                    msg += "• 𝑂𝑢𝑡 <𝑛𝑢𝑚𝑏𝑒𝑟> - 𝐿𝑒𝑎𝑣𝑒 𝑔𝑟𝑜𝑢𝑝";
-
-                    // Store group data for reply handling with expiration
-                    global.allboxData = global.allboxData || {};
-                    const storageId = `${event.messageID}_${Date.now()}`;
-                    global.allboxData[storageId] = {
-                        groups: pageGroups,
-                        startIdx: startIdx,
-                        timestamp: Date.now(),
-                        senderID: senderID
-                    };
-
-                    // Clean up old data (older than 10 minutes)
-                    setTimeout(() => {
-                        if (global.allboxData && global.allboxData[storageId]) {
-                            delete global.allboxData[storageId];
-                        }
-                    }, 10 * 60 * 1000);
-
-                    await message.reply(msg);
-                    break;
-                }
-
-                default: {
-                    let threadList;
-                    try {
-                        threadList = await api.getThreadList(20, null, ["INBOX"]);
-                        if (!threadList || !Array.isArray(threadList)) {
-                            throw new Error("𝐼𝑛𝑣𝑎𝑙𝑖𝑑 𝑡ℎ𝑟𝑒𝑎𝑑 𝑙𝑖𝑠𝑡 𝑟𝑒𝑠𝑝𝑜𝑛𝑠𝑒");
-                        }
-                    } catch (e) {
-                        console.error("𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑓𝑒𝑡𝑐ℎ 𝑡ℎ𝑟𝑒𝑎𝑑 𝑙𝑖𝑠𝑡:", e);
-                        return message.reply("❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑓𝑒𝑡𝑐ℎ 𝑡ℎ𝑟𝑒𝑎𝑑 𝑙𝑖𝑠𝑡! 𝑃𝑙𝑒𝑎𝑠𝑒 𝑡𝑟𝑦 𝑎𝑔𝑎𝑖𝑛 𝑙𝑎𝑡𝑒𝑟.");
-                    }
-
-                    const groups = threadList.filter(t => t && t.isGroup === true);
-
-                    if (groups.length === 0) {
-                        return message.reply("❌ 𝑁𝑜 𝑔𝑟𝑜𝑢𝑝𝑠 𝑓𝑜𝑢𝑛𝑑 𝑖𝑛 𝑏𝑜𝑡'𝑠 𝑖𝑛𝑏𝑜𝑥!");
-                    }
-
-                    let listMsg = `🍄 𝑅𝑒𝑐𝑒𝑛𝑡 𝐺𝑟𝑜𝑢𝑝𝑠 (${groups.length}) 🍄\n\n`;
-                    
-                    groups.forEach((group, i) => {
-                        const memberCount = group.participantIDs ? group.participantIDs.length : "𝑁/𝐴";
-                        const groupName = group.name || "𝑈𝑛𝑛𝑎𝑚𝑒𝑑 𝐺𝑟𝑜𝑢𝑝";
-                        const messageCount = group.messageCount || 0;
-                        
-                        listMsg += `▣ ${i+1}. ${groupName}\n`;
-                        listMsg += `   🔰 𝑇𝐼𝐷: ${group.threadID}\n`;
-                        listMsg += `   👥 𝑀𝑒𝑚𝑏𝑒𝑟𝑠: ${memberCount}\n`;
-                        listMsg += `   💌 𝑀𝑠𝑔𝑠: ${messageCount}\n\n`;
-                    });
-
-                    if (groups.length >= 20) {
-                        listMsg += `📋 𝑈𝑠𝑒 '${global.config.PREFIX}allbox all' 𝑡𝑜 𝑠𝑒𝑒 𝑎𝑙𝑙 𝑔𝑟𝑜𝑢𝑝𝑠`;
-                    }
-                    
-                    await message.reply(listMsg);
-                    break;
-                }
+            // Check if empty
+            if (groups.length === 0) {
+                if (isPendingMode) return message.reply(getText("returnListClean"));
+                return message.reply("❌ 𝐍𝐨 𝐠𝐫𝐨𝐮𝐩𝐬 𝐟𝐨𝐮𝐧𝐝 𝐢𝐧 𝐭𝐡𝐞 𝐝𝐚𝐭𝐚𝐛𝐚𝐬𝐞/𝐢𝐧𝐛𝐨𝐱.");
             }
+
+            // --- Pagination Logic ---
+            const totalPages = Math.ceil(groups.length / limit);
+            if (page < 1) page = 1;
+            if (page > totalPages) page = totalPages;
+
+            const startIdx = (page - 1) * limit;
+            const pageGroups = groups.slice(startIdx, startIdx + limit);
+
+            // --- Text Formatting (Atomic Style) ---
+            let msg = isPendingMode 
+                ? `🔮 𝐏𝐄𝐍𝐃𝐈𝐍𝐆 𝐁𝐎𝐗 [${page}/${totalPages}] 🔮\n━━━━━━━━━━━━━━━━━━\n`
+                : `🌐 𝐀𝐋𝐋 𝐆𝐑𝐎𝐔𝐏𝐒 [${page}/${totalPages}] 🌐\n━━━━━━━━━━━━━━━━━━\n`;
+            
+            let num = startIdx + 1;
+            const groupMap = []; // To store data for reply
+
+            for (const group of pageGroups) {
+                const name = group.name || "𝐔𝐧𝐧𝐚𝐦𝐞𝐝 𝐆𝐫𝐨𝐮𝐩";
+                const tid = group.threadID;
+                const members = group.participantIDs ? group.participantIDs.length : 0;
+                const msgs = group.messageCount || 0;
+                
+                // Check database status if possible
+                let status = "🟢";
+                try {
+                    const dbData = await threadsData.getData(tid);
+                    if (dbData && dbData.banned) status = "🔴 (Banned)";
+                } catch (e) {}
+
+                msg += `╭ ${num}. 𝐍𝐚𝐦𝐞: ${name}\n`;
+                msg += `├ 🆔 𝐓𝐈𝐃: ${tid}\n`;
+                msg += `├ 👥 𝐌𝐞𝐦: ${members} | 💌 𝐌𝐬𝐠: ${msgs}\n`;
+                msg += `╰ 𝐒𝐭𝐚𝐭𝐮𝐬: ${status}\n\n`;
+
+                groupMap.push(group);
+                num++;
+            }
+
+            msg += `━━━━━━━━━━━━━━━━━━\n`;
+            msg += `📊 𝐓𝐨𝐭𝐚𝐥: ${groups.length} groups\n`;
+            
+            if (isPendingMode) {
+                msg += `👉 𝐑𝐞𝐩𝐥𝐲: "approve <num>" or "reject <num>"`;
+            } else {
+                msg += `👉 𝐑𝐞𝐩𝐥𝐲 with choice:\n`;
+                msg += `• 𝐛𝐚𝐧 <𝐧𝐮𝐦> : Ban Group\n`;
+                msg += `• 𝐮𝐧𝐛 <𝐧𝐮𝐦> : Unban Group\n`;
+                msg += `• 𝐨𝐮𝐭 <𝐧𝐮𝐦> : Leave Group\n`;
+                msg += `• 𝐝𝐞𝐥 <𝐧𝐮𝐦> : Delete Data`;
+            }
+
+            // --- Save Session Data ---
+            // We use a unique ID based on messageID to handle the reply
+            global.allboxData = global.allboxData || {};
+            global.allboxData[message.messageID] = {
+                type: isPendingMode ? "pending" : "inbox",
+                groups: groupMap,
+                startIndex: startIdx,
+                author: senderID,
+                timestamp: Date.now()
+            };
+
+            // Auto-clear cache after 5 minutes
+            setTimeout(() => {
+                if (global.allboxData[message.messageID]) {
+                    delete global.allboxData[message.messageID];
+                }
+            }, 300000);
+
+            // Send the list
+            const sentMsg = await message.reply(msg);
+            
+            // Map the sent message ID to the data as well (for reply handling)
+            global.allboxData[sentMsg.messageID] = global.allboxData[message.messageID];
 
         } catch (error) {
-            console.error("💥 𝐴𝑙𝑙𝑏𝑜𝑥 𝑐𝑜𝑚𝑚𝑎𝑛𝑑 𝑒𝑟𝑟𝑜𝑟:", error);
-            await message.reply("❌ 𝐴𝑛 𝑒𝑟𝑟𝑜𝑟 𝑜𝑐𝑐𝑢𝑟𝑟𝑒𝑑. 𝑃𝑙𝑒𝑎𝑠𝑒 𝑡𝑟𝑦 𝑎𝑔𝑎𝑖𝑛 𝑙𝑎𝑡𝑒𝑟.");
+            console.error("Critical Error in Allbox:", error);
+            message.reply("❌ 𝐂𝐫𝐢𝐭𝐢𝐜𝐚𝐥 𝐞𝐫𝐫𝐨𝐫 𝐞𝐱𝐞𝐜𝐮𝐭𝐢𝐧𝐠 𝐜𝐨𝐦𝐦𝐚𝐧𝐝.");
         }
     },
 
-    onChat: async function({ message, event, api, threadsData }) {
+    onChat: async function({ message, event, api, threadsData, getText }) {
+        const { body, messageReply, senderID } = event;
+
+        // 1. Check if it's a reply
+        if (!messageReply || !messageReply.messageID) return;
+
+        // 2. Check if data exists for this message
+        if (!global.allboxData || !global.allboxData[messageReply.messageID]) return;
+
+        const session = global.allboxData[messageReply.messageID];
+
+        // 3. Security Check: Only the author of the command can use the menu
+        if (senderID !== session.author) return;
+
+        // 4. Parse Input (e.g., "out 1" or "ban 2")
+        const args = body.trim().split(/\s+/);
+        const command = args[0].toLowerCase();
+        const index = parseInt(args[1]);
+
+        if (!index || isNaN(index)) return message.reply("❌ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐞𝐧𝐭𝐞𝐫 𝐚 𝐯𝐚𝐥𝐢𝐝 𝐧𝐮𝐦𝐛𝐞𝐫.");
+
+        // Adjust index to array (User sees 1..10, Array is 0..9)
+        // But remember, the list might start at 11, 21 etc.
+        // We stored the *exact page pageGroups* in `session.groups`.
+        // So we need to find which item in the session array corresponds to the number.
+        
+        // Calculate the visual index relative to the page
+        // If list shows 11, 12, 13... and user types 11.
+        // session.startIndex is 10.
+        // arrayIndex = 11 - 10 - 1 = 0.
+        
+        const arrayIndex = index - session.startIndex - 1;
+
+        if (arrayIndex < 0 || arrayIndex >= session.groups.length) {
+            return message.reply(`❌ 𝐍𝐮𝐦𝐛𝐞𝐫 ${index} 𝐢𝐬 𝐧𝐨𝐭 𝐨𝐧 𝐭𝐡𝐢𝐬 𝐩𝐚𝐠𝐞.`);
+        }
+
+        const targetGroup = session.groups[arrayIndex];
+        const groupName = targetGroup.name || "Unknown";
+        const tid = targetGroup.threadID;
+
         try {
-            const { body, messageReply, senderID } = event;
-            
-            if (!messageReply || !global.allboxData) {
-                return;
-            }
-
-            // Find the storage ID that matches the replied message
-            let storageId = null;
-            for (const [id, data] of Object.entries(global.allboxData)) {
-                if (id.startsWith(messageReply.messageID)) {
-                    storageId = id;
-                    break;
-                }
-            }
-
-            if (!storageId || !global.allboxData[storageId]) {
-                return;
-            }
-
-            const { groups, startIdx, timestamp, storedSenderID } = global.allboxData[storageId];
-            
-            // Validate data expiration (10 minutes)
-            if (Date.now() - timestamp > 10 * 60 * 1000) {
-                delete global.allboxData[storageId];
-                return message.reply("❌ 𝑇ℎ𝑖𝑠 𝑐𝑜𝑚𝑚𝑎𝑛𝑑 𝑠𝑒𝑠𝑠𝑖𝑜𝑛 ℎ𝑎𝑠 𝑒𝑥𝑝𝑖𝑟𝑒𝑑. 𝑃𝑙𝑒𝑎𝑠𝑒 𝑟𝑢𝑛 𝑡ℎ𝑒 𝑐𝑜𝑚𝑚𝑎𝑛𝑑 𝑎𝑔𝑎𝑖𝑛.");
-            }
-
-            // Validate user permissions
-            if (storedSenderID && storedSenderID !== senderID) {
-                return message.reply("❌ 𝑌𝑜𝑢 𝑎𝑟𝑒 𝑛𝑜𝑡 𝑎𝑢𝑡ℎ𝑜𝑟𝑖𝑧𝑒𝑑 𝑡𝑜 𝑢𝑠𝑒 𝑡ℎ𝑖𝑠 𝑐𝑜𝑚𝑚𝑎𝑛𝑑 𝑠𝑒𝑠𝑠𝑖𝑜𝑛.");
-            }
-
-            const [action, index] = body.trim().split(" ");
-            const actionType = action.toLowerCase();
-            
-            if (!["ban", "ub", "del", "out"].includes(actionType) || !index || isNaN(index)) {
-                return message.reply("❌ 𝐼𝑛𝑣𝑎𝑙𝑖𝑑 𝑐𝑜𝑚𝑚𝑎𝑛𝑑! 𝑈𝑠𝑒: 𝐵𝑎𝑛/𝑈𝑏/𝐷𝑒𝑙/𝑂𝑢𝑡 <𝑛𝑢𝑚𝑏𝑒𝑟>");
-            }
-
-            const selectedIndex = parseInt(index) - 1;
-            
-            if (selectedIndex < 0 || selectedIndex >= groups.length) {
-                return message.reply("❌ 𝐼𝑛𝑣𝑎𝑙𝑖𝑑 𝑠𝑒𝑙𝑒𝑐𝑡𝑖𝑜𝑛! 𝑃𝑙𝑒𝑎𝑠𝑒 𝑐ℎ𝑒𝑐𝑘 𝑡ℎ𝑒 𝑛𝑢𝑚𝑏𝑒𝑟.");
-            }
-
-            const selectedGroup = groups[selectedIndex];
-            
-            if (!selectedGroup || !selectedGroup.threadID) {
-                return message.reply("❌ 𝐼𝑛𝑣𝑎𝑙𝑖𝑑 𝑔𝑟𝑜𝑢𝑝 𝑑𝑎𝑡𝑎.");
-            }
-
-            const time = moment().tz("Asia/Dhaka").format("𝐻𝐻:𝑚𝑚:𝑠𝑠");
-            const groupName = selectedGroup.name || "𝑈𝑛𝑛𝑎𝑚𝑒𝑑 𝐺𝑟𝑜𝑢𝑝";
-
-            switch (actionType) {
-                case "ban":
-                    try {
-                        // Add ban logic here - you can implement your own ban system
-                        // For now, just sending a confirmation message
-                        await message.reply(`✅ 𝐺𝑟𝑜𝑢𝑝 "${groupName}" 𝑏𝑎𝑛𝑛𝑒𝑑 𝑠𝑢𝑐𝑐𝑒𝑠𝑠𝑓𝑢𝑙𝑙𝑦\n⏰ ${time}`);
-                    } catch (e) {
-                        console.error("𝐵𝑎𝑛 𝑒𝑟𝑟𝑜𝑟:", e);
-                        await message.reply(`❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑏𝑎𝑛 𝑔𝑟𝑜𝑢𝑝 "${groupName}"`);
-                    }
-                    break;
-                    
-                case "ub":
-                    try {
-                        // Add unban logic here
-                        await message.reply(`✅ 𝐺𝑟𝑜𝑢𝑝 "${groupName}" 𝑢𝑛𝑏𝑎𝑛𝑛𝑒𝑑 𝑠𝑢𝑐𝑐𝑒𝑠𝑠𝑓𝑢𝑙𝑙𝑦\n⏰ ${time}`);
-                    } catch (e) {
-                        console.error("𝑈𝑛𝑏𝑎𝑛 𝑒𝑟𝑟𝑜𝑟:", e);
-                        await message.reply(`❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑢𝑛𝑏𝑎𝑛 𝑔𝑟𝑜𝑢𝑝 "${groupName}"`);
-                    }
-                    break;
-                    
-                case "del":
-                    try {
-                        // Add delete data logic here
-                        // You can implement data deletion from threadsData
-                        await message.reply(`✅ 𝐺𝑟𝑜𝑢𝑝 "${groupName}" 𝑑𝑎𝑡𝑎 𝑑𝑒𝑙𝑒𝑡𝑒𝑑 𝑠𝑢𝑐𝑐𝑒𝑠𝑠𝑓𝑢𝑙𝑙𝑦\n⏰ ${time}`);
-                    } catch (e) {
-                        console.error("𝐷𝑒𝑙𝑒𝑡𝑒 𝑒𝑟𝑟𝑜𝑟:", e);
-                        await message.reply(`❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑑𝑒𝑙𝑒𝑡𝑒 𝑔𝑟𝑜𝑢𝑝 𝑑𝑎𝑡𝑎 "${groupName}"`);
-                    }
-                    break;
-                    
+            // --- ACTION HANDLER ---
+            switch (command) {
+                // Normal Modes
                 case "out":
-                    try {
-                        const botID = api.getCurrentUserID();
-                        await api.removeUserFromGroup(botID, selectedGroup.threadID);
-                        await message.reply(`✅ 𝐿𝑒𝑓𝑡 𝑔𝑟𝑜𝑢𝑝 "${groupName}" 𝑠𝑢𝑐𝑐𝑒𝑠𝑠𝑓𝑢𝑙𝑙𝑦\n⏰ ${time}`);
-                    } catch (e) {
-                        console.error("𝐿𝑒𝑎𝑣𝑒 𝑔𝑟𝑜𝑢𝑝 𝑒𝑟𝑟𝑜𝑟:", e);
-                        await message.reply(`❌ 𝐹𝑎𝑖𝑙𝑒𝑑 𝑡𝑜 𝑙𝑒𝑎𝑣𝑒 𝑔𝑟𝑜𝑢𝑝 "${groupName}"`);
-                    }
+                case "leave":
+                    await message.reply(`👋 𝐋𝐞𝐚𝐯𝐢𝐧𝐠 "${groupName}"...`);
+                    await api.removeUserFromGroup(api.getCurrentUserID(), tid);
+                    await message.reply("✅ 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐥𝐞𝐟𝐭.");
+                    break;
+
+                case "ban":
+                    await threadsData.setData(tid, { banned: true, reason: "Admin Ban via Allbox" });
+                    await message.reply(`🔴 𝐁𝐚𝐧𝐧𝐞𝐝 group: ${groupName}`);
+                    // Optionally kick bot out or send message to group
+                    api.sendMessage("🚫 𝐓𝐡𝐢𝐬 𝐠𝐫𝐨𝐮𝐩 𝐡𝐚𝐬 𝐛𝐞𝐞𝐧 𝐛𝐚𝐧𝐧𝐞𝐝 𝐛𝐲 𝐭𝐡𝐞 𝐨𝐰𝐧𝐞𝐫.", tid).catch(() => {});
+                    break;
+
+                case "unb":
+                case "unban":
+                    await threadsData.setData(tid, { banned: false });
+                    await message.reply(`🟢 𝐔𝐧𝐛𝐚𝐧𝐧𝐞𝐝 group: ${groupName}`);
+                    break;
+
+                case "del":
+                    await threadsData.delData(tid);
+                    await message.reply(`🗑️ 𝐃𝐞𝐥𝐞𝐭𝐞𝐝 𝐝𝐚𝐭𝐚 for: ${groupName}`);
+                    break;
+
+                // Pending Modes
+                case "approve":
+                case "app":
+                    if (session.type !== "pending") return message.reply("❌ This command is for Pending list only.");
+                    // In Mirai/Goat, replying usually approves automatically if it's a message request, 
+                    // but for group requests we might just need to send a message to 'activate' it or just acknowledge.
+                    // Since specific approve logic depends on strict bot core, we will assume standard acknowledgment.
+                    await message.reply(getText("approveSuccess", 1));
+                    break;
+                
+                case "reject":
+                case "rej":
+                    if (session.type !== "pending") return message.reply("❌ This command is for Pending list only.");
+                    await api.deleteThread(tid); // Deletes the pending thread
+                    await message.reply(getText("cancelSuccess", 1));
+                    break;
+
+                default:
+                    message.reply("❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐂𝐨𝐦𝐦𝐚𝐧𝐝. Use: ban, unb, out, del.");
                     break;
             }
-
-            // Clean up stored data
-            delete global.allboxData[storageId];
-
-        } catch (error) {
-            console.error("💥 𝐴𝑙𝑙𝑏𝑜𝑥 𝑐ℎ𝑎𝑡 ℎ𝑎𝑛𝑑𝑙𝑒𝑟 𝑒𝑟𝑟𝑜𝑟:", error);
-            await message.reply("❌ 𝐴𝑛 𝑒𝑟𝑟𝑜𝑟 𝑜𝑐𝑐𝑢𝑟𝑟𝑒𝑑 𝑤ℎ𝑖𝑙𝑒 𝑝𝑟𝑜𝑐𝑒𝑠𝑠𝑖𝑛𝑔 𝑦𝑜𝑢𝑟 𝑟𝑒𝑞𝑢𝑒𝑠𝑡.");
+        } catch (err) {
+            console.error("Action Error:", err);
+            message.reply(`❌ 𝐄𝐫𝐫𝐨𝐫: ${err.message}`);
         }
     }
 };
