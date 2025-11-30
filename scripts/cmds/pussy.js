@@ -5,10 +5,10 @@ module.exports = {
 		version: "1.0",
 		author: "Asif",
 		countDown: 5,
-		role: 2,
+		role: 0,
 		shortDescription: "send you pic of pussy",
 		longDescription: "sends u pic of girls pussy",
-		category: "18+",
+		category: "🔞 18+",
 		guide: "{pn}"
 	},
 
