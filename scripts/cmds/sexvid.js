@@ -12,7 +12,7 @@ module.exports = {
     role: 0,
     shortDescription: "Send naughty dark fantasy adult videos",
     longDescription: "Get random dark fantasy styled adult videos from Google Drive links",
-    category: "18+",
+    category: "🔞 18+",
     guide: "{p}{n}",
   },
 
