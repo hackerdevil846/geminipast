@@ -10,7 +10,7 @@ module.exports = {
     author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
     countDown: 10,
     role: 0,
-    category: "adult",
+    category: "🔞 18+",
     shortDescription: { en: "Get random hentai videos (SFW/NSFW depends on source)" },
     longDescription: { en: "Fetches random hentai videos from a source site" },
     guide: { en: "{p}hentai4u" },
