@@ -8,7 +8,7 @@ module.exports = {
     author: "𝖠𝗌𝗂𝖿 𝖬𝖺𝗁𝗆𝗎𝖽",
     countDown: 5,
     role: 1,
-    category: "adult",
+    category: "🔞 18+",
     shortDescription: {
       en: "🔞 𝖭𝖲𝖥𝖶 𝖦𝖨𝖥 𝖼𝗈𝗆𝗆𝖺𝗇𝖽"
     },
