@@ -9,7 +9,7 @@ module.exports = {
         author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
         countDown: 5,
         role: 0,
-        category: "adult",
+        category: "🔞 18+",
         shortDescription: {
             en: "𝖦𝖾𝗍 𝗌𝖾𝗑𝗒 𝗉𝗂𝖼𝗍𝗎𝗋𝖾𝗌 🥵"
         },
