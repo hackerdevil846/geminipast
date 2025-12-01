@@ -21,7 +21,7 @@ module.exports = {
         author: "Asif Mahmud", // Modified by AI
         countDown: 5,
         role: 2, // Admin Only
-        category: "admin",
+        category: "𝐬𝐲𝐬𝐭𝐞𝐦",
         shortDescription: {
             en: "𝐌𝐚𝐧𝐚𝐠𝐞 𝐅𝐫𝐢𝐞𝐧𝐝𝐬 & 𝐑𝐞𝐪𝐮𝐞𝐬𝐭𝐬"
         },
