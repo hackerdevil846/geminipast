@@ -8,7 +8,7 @@ module.exports = {
     author: "𝖠𝗌𝗂𝖿 𝖬𝖺𝗁𝗆𝗎𝖽",
     countDown: 5,
     role: 1,
-    category: "admin",
+    category: "𝐬𝐲𝐬𝐭𝐞𝐦",
     shortDescription: {
       en: "𝖦𝗋𝗈𝗎𝗉 𝗆𝖾𝗆𝖻𝖾𝗋𝗌 𝗄𝗂𝖼𝗄 𝖼𝗈𝗆𝗆𝖺𝗇𝖽"
     },
