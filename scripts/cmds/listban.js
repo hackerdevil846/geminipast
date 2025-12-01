@@ -1,20 +1,35 @@
+const fs = require("fs-extra");
+
+/**
+ * 𝐇𝐞𝐥𝐩𝐞𝐫 𝐅𝐮𝐧𝐜𝐭𝐢𝐨𝐧 𝐭𝐨 𝐂𝐨𝐧𝐯𝐞𝐫𝐭 𝐓𝐞𝐱𝐭 𝐭𝐨 𝐁𝐨𝐥𝐝 𝐒𝐚𝐧𝐬-𝐬𝐞𝐫𝐢𝐟
+ */
+const toBold = (str) => {
+    return str.replace(/[a-zA-Z0-9]/g, (char) => {
+        const code = char.charCodeAt(0);
+        if (code >= 65 && code <= 90) return String.fromCodePoint(code + 120211); // A-Z
+        if (code >= 97 && code <= 122) return String.fromCodePoint(code + 120205); // a-z
+        if (code >= 48 && code <= 57) return String.fromCodePoint(code + 120764); // 0-9
+        return char;
+    });
+};
+
 module.exports = {
     config: {
         name: "listban",
         aliases: [],
-        version: "1.0.3",
+        version: "2.0.0",
         author: "𝖠𝗌𝗂𝖿 𝖬𝖺𝗁𝗆𝗎𝖽",
         countDown: 5,
-        role: 2,
-        category: "admin",
+        role: 2, // Admin Only
+        category: "𝐬𝐲𝐬𝐭𝐞𝐦",
         shortDescription: {
-            en: "𝖡𝖺𝗇/𝖴𝗇𝖻𝖺𝗇 𝗆𝗈𝖽𝗎𝗅𝖾 𝖿𝗈𝗋 𝖺𝖽𝗆𝗂𝗇𝗌"
+            en: "𝐌𝐚𝐧𝐚𝐠𝐞 𝐁𝐚𝐧𝐧𝐞𝐝 𝐔𝐬𝐞𝐫𝐬/𝐆𝐫𝐨𝐮𝐩𝐬"
         },
         longDescription: {
-            en: "𝖬𝖺𝗇𝖺𝗀𝖾 𝖻𝖺𝗇𝗇𝖾𝖽 𝗎𝗌𝖾𝗋𝗌 𝖺𝗇𝖽 𝗀𝗋𝗈𝗎𝗉𝗌"
+            en: "𝐕𝐢𝐞𝐰 𝐚𝐧𝐝 𝐔𝐧𝐛𝐚𝐧 𝐮𝐬𝐞𝐫𝐬 𝐨𝐫 𝐠𝐫𝐨𝐮𝐩𝐬 𝐰𝐢𝐭𝐡 𝐩𝐚𝐠𝐢𝐧𝐚𝐭𝐢𝐨𝐧."
         },
         guide: {
-            en: "{p}listban [𝗍𝗁𝗋𝖾𝖺𝖽/𝗎𝗌𝖾𝗋]"
+            en: "{p}listban [𝐮𝐬𝐞𝐫 | 𝐭𝐡𝐫𝐞𝐚𝐝]"
         },
         dependencies: {
             "fs-extra": "",
@@ -22,278 +37,161 @@ module.exports = {
         }
     },
 
-    languages: {
-        "en": {
-            "no_banned_groups": "𝖢𝗎𝗋𝗋𝖾𝗇𝗍𝗅𝗒 𝗍𝗁𝖾𝗋𝖾 𝖺𝗋𝖾 𝗇𝗈 𝖻𝖺𝗇𝗇𝖾𝖽 𝗀𝗋𝗈𝗎𝗉𝗌! ✅",
-            "no_banned_users": "𝖢𝗎𝗋𝗋𝖾𝗇𝗍𝗅𝗒 𝗍𝗁𝖾𝗋𝖾 𝖺𝗋𝖾 𝗇𝗈 𝖻𝖺𝗇𝗇𝖾𝖽 𝗎𝗌𝖾𝗋𝗌! ✅",
-            "invalid_order": "𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝗈𝗋𝖽𝖾𝗋 𝗇𝗎𝗆𝖻𝖾𝗋! ⚠️",
-            "only_initiator": "𝖮𝗇𝗅𝗒 𝗍𝗁𝖾 𝗂𝗇𝗂𝗍𝗂𝖺𝗍𝗈𝗋 𝖼𝖺𝗇 𝗎𝗌𝖾 𝗍𝗁𝗂𝗌 𝖼𝗈𝗆𝗆𝖺𝗇𝖽! ⚠️",
-            "error_processing": "𝖠𝗇 𝖾𝗋𝗋𝗈𝗋 𝗈𝖼𝖼𝗎𝗋𝗋𝖾𝖽 𝗐𝗁𝗂𝗅𝖾 𝗉𝗋𝗈𝖼𝖾𝗌𝗌𝗂𝗇𝗀! ⚠️"
-        }
-    },
-
-    onLoad: function () {
-        try {
-            if (!global.client) global.client = {};
-            if (!global.client.handleReply) global.client.handleReply = [];
-            console.log("✅ 𝖫𝗂𝗌𝗍𝖻𝖺𝗇 𝗆𝗈𝖽𝗎𝗅𝖾 𝗅𝗈𝖺𝖽𝖾𝖽 𝗌𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒");
-        } catch (error) {
-            console.error("💥 𝖤𝗋𝗋𝗈𝗋 𝗅𝗈𝖺𝖽𝗂𝗇𝗀 𝗅𝗂𝗌𝗍𝖻𝖺𝗇:", error);
-        }
-    },
-
     onStart: async function ({ message, event, args, Users, Threads }) {
         try {
-            // Dependency check
-            let fsAvailable = true;
-            let axiosAvailable = true;
-            try {
-                require("fs-extra");
-                require("axios");
-            } catch (e) {
-                fsAvailable = false;
-                axiosAvailable = false;
-            }
+            // --- 𝟏. 𝐃𝐞𝐩𝐞𝐧𝐝𝐞𝐧𝐜𝐲 & 𝐃𝐚𝐭𝐚 𝐂𝐡𝐞𝐜𝐤 ---
+            if (!global.data.userBanned) global.data.userBanned = new Map();
+            if (!global.data.threadBanned) global.data.threadBanned = new Map();
 
-            if (!fsAvailable || !axiosAvailable) {
-                return message.reply("❌ 𝖬𝗂𝗌𝗌𝗂𝗇𝗀 𝖽𝖾𝗉𝖾𝗇𝖽𝖾𝗇𝖼𝗂𝖾𝗌. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗂𝗇𝗌𝗍𝖺𝗅𝗅 𝖿𝗌-𝖾𝗑𝗍𝗋𝖺 𝖺𝗇𝖽 𝖺𝗑𝗂𝗈𝗌.");
-            }
-
+            const type = (args[0] || "").toLowerCase();
             const { threadID, senderID } = event;
-            let listBanned = [];
-            let i = 1;
 
-            // Validate global data exists
-            if (!global.data) {
-                global.data = {};
-            }
-            if (!global.data.threadBanned) {
-                global.data.threadBanned = new Map();
-            }
-            if (!global.data.userBanned) {
-                global.data.userBanned = new Map();
-            }
-            if (!global.data.userName) {
-                global.data.userName = new Map();
-            }
-
-            switch ((args[0] || "").toLowerCase()) {
-                case "thread":
-                case "t":
-                case "-t": {
-                    const threadBanned = Array.from(global.data.threadBanned.keys());
-
-                    if (threadBanned.length === 0) {
-                        return message.reply(this.languages.en.no_banned_groups);
-                    }
-
-                    for (const singleThread of threadBanned) {
-                        try {
-                            const dataThread = (await Threads.getData(singleThread)) || {};
-                            const threadInfo = dataThread.threadInfo || {};
-                            const nameT = threadInfo.threadName || "𝖴𝗇𝗄𝗇𝗈𝗐𝗇 𝖦𝗋𝗈𝗎𝗉";
-
-                            listBanned.push(`${i++}. ${nameT}\n🍂 𝖳𝖨𝖣: ${singleThread}`);
-                        } catch (threadError) {
-                            console.error(`𝖤𝗋𝗋𝗈𝗋 𝗀𝖾𝗍𝗍𝗂𝗇𝗀 𝗍𝗁𝗋𝖾𝖺𝖽 𝖽𝖺𝗍𝖺 ${singleThread}:`, threadError);
-                            listBanned.push(`${i++}. 𝖤𝗋𝗋𝗈𝗋 𝖫𝗈𝖺𝖽𝗂𝗇𝗀 𝖦𝗋𝗈𝗎𝗉\n🍂 𝖳𝖨𝖣: ${singleThread}`);
-                        }
-                    }
-
-                    const msg = await message.reply({
-                        body: `📋 𝖢𝗎𝗋𝗋𝖾𝗇𝗍𝗅𝗒 ${listBanned.length} 𝖻𝖺𝗇𝗇𝖾𝖽 𝗀𝗋𝗈𝗎𝗉𝗌:\n\n${listBanned.join("\n\n")}\n\n📝 𝖱𝖾𝗉𝗅𝗒 𝗐𝗂𝗍𝗁 𝗈𝗋𝖽𝖾𝗋 𝗇𝗎𝗆𝖻𝖾𝗋 𝗍𝗈 𝗎𝗇𝖻𝖺𝗇`,
-                        attachment: null
-                    });
-
-                    global.client.handleReply.push({
-                        name: this.config.name,
-                        messageID: msg.messageID,
-                        author: event.senderID,
-                        type: "unbanthread",
-                        listBanned
-                    });
-                    break;
+            // --- 𝟐. 𝐌𝐚𝐢𝐧 𝐒𝐞𝐥𝐞𝐜𝐭𝐢𝐨𝐧 𝐋𝐨𝐠𝐢𝐜 ---
+            if (["thread", "t", "group"].includes(type)) {
+                // Handle Thread Ban List
+                const bannedThreads = Array.from(global.data.threadBanned.keys());
+                
+                if (bannedThreads.length === 0) {
+                    return message.reply(toBold("✅ 𝐂𝐮𝐫𝐫𝐞𝐧𝐭𝐥𝐲, 𝐭𝐡𝐞𝐫𝐞 𝐚𝐫𝐞 𝐧𝐨 𝐛𝐚𝐧𝐧𝐞𝐝 𝐠𝐫𝐨𝐮𝐩𝐬!"));
                 }
 
-                case "user":
-                case "u":
-                case "-u": {
-                    const userBanned = Array.from(global.data.userBanned.keys());
+                message.reply(toBold(`🔄 𝐋𝐨𝐚𝐝𝐢𝐧𝐠 ${bannedThreads.length} 𝐛𝐚𝐧𝐧𝐞𝐝 𝐠𝐫𝐨𝐮𝐩𝐬...`));
 
-                    if (userBanned.length === 0) {
-                        return message.reply(this.languages.en.no_banned_users);
-                    }
-
-                    for (const singleUser of userBanned) {
-                        try {
-                            let name = global.data.userName.get(singleUser);
-                            if (!name) {
-                                name = await Users.getNameUser(singleUser) || "𝖴𝗇𝗄𝗇𝗈𝗐𝗇 𝖴𝗌𝖾𝗋";
-                                global.data.userName.set(singleUser, name);
-                            }
-                            listBanned.push(`${i++}. ${name}\n🍁 𝖴𝖨𝖣: ${singleUser}`);
-                        } catch (userError) {
-                            console.error(`𝖤𝗋𝗋𝗈𝗋 𝗀𝖾𝗍𝗍𝗂𝗇𝗀 𝗎𝗌𝖾𝗋 𝖽𝖺𝗍𝖺 ${singleUser}:`, userError);
-                            listBanned.push(`${i++}. 𝖤𝗋𝗋𝗈𝗋 𝖫𝗈𝖺𝖽𝗂𝗇𝗀 𝖴𝗌𝖾𝗋\n🍁 𝖴𝖨𝖣: ${singleUser}`);
-                        }
-                    }
-
-                    const msg = await message.reply({
-                        body: `📋 𝖢𝗎𝗋𝗋𝖾𝗇𝗍𝗅𝗒 ${listBanned.length} 𝖻𝖺𝗇𝗇𝖾𝖽 𝗎𝗌𝖾𝗋𝗌:\n\n${listBanned.join("\n\n")}\n\n📝 𝖱𝖾𝗉𝗅𝗒 𝗐𝗂𝗍𝗁 𝗈𝗋𝖽𝖾𝗋 𝗇𝗎𝗆𝖻𝖾𝗋 𝗍𝗈 𝗎𝗇𝖻𝖺𝗇`,
-                        attachment: null
-                    });
-
-                    global.client.handleReply.push({
-                        name: this.config.name,
-                        messageID: msg.messageID,
-                        author: event.senderID,
-                        type: "unbanuser",
-                        listBanned
-                    });
-                    break;
+                const list = [];
+                for (const tid of bannedThreads) {
+                    const name = await Threads.getName(tid) || "Unknown Group";
+                    list.push({ id: tid, name: name });
                 }
 
-                default: {
-                    const helpMessage = `» 𝖡𝖺𝗇 𝖬𝗈𝖽𝗎𝗅𝖾 «\n\n🔹 𝖴𝗌𝖺𝗀𝖾: ${global.config.PREFIX || "!"}listban [option]\n\n🔸 𝖮𝗉𝗍𝗂𝗈𝗇𝗌:\n  • 𝗍𝗁𝗋𝖾𝖺𝖽 / 𝗍 - 𝖲𝗁𝗈𝗐 𝖻𝖺𝗇𝗇𝖾𝖽 𝗀𝗋𝗈𝗎𝗉𝗌\n  • 𝗎𝗌𝖾𝗋 / 𝗎   - 𝖲𝗁𝗈𝗐 𝖻𝖺𝗇𝗇𝖾𝖽 𝗎𝗌𝖾𝗋𝗌\n\n📝 𝖱𝖾𝗉𝗅𝗒 𝗍𝗈 𝖺 𝗅𝗂𝗌𝗍𝖾𝖽 𝗂𝗍𝖾𝗆 𝗐𝗂𝗍𝗁 𝗂𝗍𝗌 𝗈𝗋𝖽𝖾𝗋 𝗇𝗎𝗆𝖻𝖾𝗋 𝗍𝗈 𝗎𝗇𝖻𝖺𝗇`;
-                    return message.reply(helpMessage);
+                this.sendPage(message, threadID, list, 1, "thread", senderID);
+
+            } else if (["user", "u", "member"].includes(type)) {
+                // Handle User Ban List
+                const bannedUsers = Array.from(global.data.userBanned.keys());
+
+                if (bannedUsers.length === 0) {
+                    return message.reply(toBold("✅ 𝐂𝐮𝐫𝐫𝐞𝐧𝐭𝐥𝐲, 𝐭𝐡𝐞𝐫𝐞 𝐚𝐫𝐞 𝐧𝐨 𝐛𝐚𝐧𝐧𝐞𝐝 𝐮𝐬𝐞𝐫𝐬!"));
                 }
+
+                message.reply(toBold(`🔄 𝐋𝐨𝐚𝐝𝐢𝐧𝐠 ${bannedUsers.length} 𝐛𝐚𝐧𝐧𝐞𝐝 𝐮𝐬𝐞𝐫𝐬...`));
+
+                const list = [];
+                for (const uid of bannedUsers) {
+                    const name = await Users.getNameUser(uid) || "Unknown User";
+                    list.push({ id: uid, name: name });
+                }
+
+                this.sendPage(message, threadID, list, 1, "user", senderID);
+
+            } else {
+                // Help Message
+                return message.reply(toBold(
+                    "⚠️ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐅𝐨𝐫𝐦𝐚𝐭!\n\n" +
+                    "🔹 𝐔𝐬𝐚𝐠𝐞:\n" +
+                    "• listban user  → 𝐒𝐡𝐨𝐰 𝐛𝐚𝐧𝐧𝐞𝐝 𝐮𝐬𝐞𝐫𝐬\n" +
+                    "• listban thread → 𝐒𝐡𝐨𝐰 𝐛𝐚𝐧𝐧𝐞𝐝 𝐠𝐫𝐨𝐮𝐩𝐬"
+                ));
             }
+
         } catch (error) {
-            console.error("💥 𝖫𝗂𝗌𝗍𝖻𝖺𝗇 𝗌𝗍𝖺𝗋𝗍 𝖾𝗋𝗋𝗈𝗋:", error);
-            return message.reply(this.languages.en.error_processing);
+            console.error("Listban Error:", error);
+            message.reply(toBold("❌ 𝐀𝐧 𝐞𝐫𝐫𝐨𝐫 𝐨𝐜𝐜𝐮𝐫𝐫𝐞𝐝."));
         }
     },
 
-    onReply: async function ({ event, message, Reply, Users, Threads }) {
+    onReply: async function ({ event, message, Reply, Users, Threads, api }) {
         try {
             const { senderID, body } = event;
+            if (senderID !== Reply.author) return; // Strict Author Check
 
-            // Validate reply data
-            if (!Reply || !Reply.author || !Reply.listBanned || !Reply.type) {
-                return message.reply("❌ 𝖨𝗇𝗏𝖺𝗅𝗂𝖽 𝗋𝖾𝗉𝗅𝗒 𝖽𝖺𝗍𝖺. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇.");
+            const { list, page, type } = Reply;
+            const input = body.toLowerCase().trim();
+
+            // --- 𝟑. 𝐏𝐚𝐠𝐢𝐧𝐚𝐭𝐢𝐨𝐧 𝐋𝐨𝐠𝐢𝐜 ---
+            if (input === "next") {
+                const totalPages = Math.ceil(list.length / 10);
+                if (page >= totalPages) return message.reply(toBold("❌ 𝐍𝐨 𝐦𝐨𝐫𝐞 𝐩𝐚𝐠𝐞𝐬."));
+                return this.sendPage(message, event.threadID, list, page + 1, type, senderID);
             }
 
-            if (parseInt(senderID) !== parseInt(Reply.author)) {
-                return message.reply(this.languages.en.only_initiator);
+            if (input === "prev") {
+                if (page <= 1) return message.reply(toBold("❌ 𝐀𝐥𝐫𝐞𝐚𝐝𝐲 𝐨𝐧 𝐟𝐢𝐫𝐬𝐭 𝐩𝐚𝐠𝐞."));
+                return this.sendPage(message, event.threadID, list, page - 1, type, senderID);
             }
 
-            const orderNumber = parseInt(body.trim());
-            if (isNaN(orderNumber) || orderNumber < 1 || orderNumber > Reply.listBanned.length) {
-                return message.reply(this.languages.en.invalid_order);
+            // --- 𝟒. 𝐔𝐧𝐛𝐚𝐧 𝐋𝐨𝐠𝐢𝐜 ---
+            const index = parseInt(input);
+            if (isNaN(index)) return message.reply(toBold("❌ 𝐏𝐥𝐞𝐚𝐬𝐞 𝐫𝐞𝐩𝐥𝐲 𝐰𝐢𝐭𝐡 𝐚 𝐯𝐚𝐥𝐢𝐝 𝐧𝐮𝐦𝐛𝐞𝐫."));
+
+            // Calculate actual index from pagination
+            const actualIndex = (page - 1) * 10 + (index - 1);
+            
+            if (actualIndex < 0 || actualIndex >= list.length) {
+                return message.reply(toBold("❌ 𝐈𝐧𝐯𝐚𝐥𝐢𝐝 𝐬𝐞𝐥𝐞𝐜𝐭𝐢𝐨𝐧."));
             }
 
-            const selectedItem = Reply.listBanned[orderNumber - 1];
-            const idMatch = selectedItem.match(/(\d{4,})/);
-            if (!idMatch) {
-                return message.reply("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝖾𝗑𝗍𝗋𝖺𝖼𝗍 𝖨𝖣! 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇.");
+            const target = list[actualIndex];
+            
+            if (type === "thread") {
+                // Unban Thread
+                const threadData = (await Threads.getData(target.id)).data || {};
+                threadData.banned = false;
+                threadData.reason = null;
+                threadData.dateAdded = null;
+                
+                await Threads.setData(target.id, { data: threadData });
+                global.data.threadBanned.delete(target.id);
+
+                message.reply(toBold(`✅ 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐔𝐧𝐛𝐚𝐧𝐧𝐞𝐝 𝐆𝐫𝐨𝐮𝐩:\n📛 ${target.name}\n🆔 ${target.id}`));
+
+            } else {
+                // Unban User
+                const userData = (await Users.getData(target.id)).data || {};
+                userData.banned = false;
+                userData.reason = null;
+                userData.dateAdded = null;
+
+                await Users.setData(target.id, { data: userData });
+                global.data.userBanned.delete(target.id);
+
+                message.reply(toBold(`✅ 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 𝐔𝐧𝐛𝐚𝐧𝐧𝐞𝐝 𝐔𝐬𝐞𝐫:\n👤 ${target.name}\n🆔 ${target.id}`));
             }
 
-            const targetID = idMatch[1];
-            let userName = "𝖠𝖽𝗆𝗂𝗇";
-            let targetName = "𝖴𝗇𝗄𝗇𝗈𝗐𝗇";
-
-            try {
-                userName = await Users.getNameUser(senderID) || "𝖠𝖽𝗆𝗂𝗇";
-            } catch (nameError) {
-                console.warn("𝖢𝗈𝗎𝗅𝖽 𝗇𝗈𝗍 𝗀𝖾𝗍 𝗎𝗌𝖾𝗋 𝗇𝖺𝗆𝖾:", nameError);
-            }
-
-            switch (Reply.type) {
-                case "unbanthread": {
-                    try {
-                        // Get thread info
-                        let threadInfo;
-                        try {
-                            threadInfo = await Threads.getInfo(targetID);
-                            targetName = (threadInfo && threadInfo.threadName) ? threadInfo.threadName : "𝖴𝗇𝗄𝗇𝗈𝗐𝗇 𝖦𝗋𝗈𝗎𝗉";
-                        } catch (infoError) {
-                            console.warn(`𝖢𝗈𝗎𝗅𝖽 𝗇𝗈𝗍 𝗀𝖾𝗍 𝗍𝗁𝗋𝖾𝖺𝖽 𝗂𝗇𝖿𝗈 ${targetID}:`, infoError);
-                            targetName = "𝖴𝗇𝗄𝗇𝗈𝗐𝗇 𝖦𝗋𝗈𝗎𝗉";
-                        }
-
-                        // Update thread data
-                        const threadDataObj = (await Threads.getData(targetID)) || {};
-                        const threadData = threadDataObj.data || {};
-                        threadData.banned = false;
-                        threadData.reason = null;
-                        threadData.dateAdded = null;
-
-                        await Threads.setData(targetID, { data: threadData });
-                        
-                        // Remove from banned list
-                        if (global.data && global.data.threadBanned) {
-                            global.data.threadBanned.delete(targetID);
-                        }
-
-                        // Try to send notification to the group
-                        try {
-                            await message.reply({
-                                body: `» 𝖭𝗈𝗍𝗂𝖿𝗂𝖼𝖺𝗍𝗂𝗈𝗇 «\n\n${userName} 𝗎𝗇𝖻𝖺𝗇𝗇𝖾𝖽 𝗍𝗁𝗂𝗌 𝖻𝗈𝗍 𝖿𝗋𝗈𝗆 𝗍𝗁𝖾 𝗀𝗋𝗈𝗎𝗉\n\n- 𝖳𝗁𝖾 𝗀𝗋𝗈𝗎𝗉 '${targetName}' 𝗁𝖺𝗌 𝖻𝖾𝖾𝗇 𝗎𝗇𝖻𝖺𝗇𝗇𝖾𝖽`,
-                                attachment: null
-                            }, targetID);
-                        } catch (notifyError) {
-                            console.warn(`𝖢𝗈𝗎𝗅𝖽 𝗇𝗈𝗍 𝗌𝖾𝗇𝖽 𝗇𝗈𝗍𝗂𝖿𝗂𝖼𝖺𝗍𝗂𝗈𝗇 𝗍𝗈 𝗀𝗋𝗈𝗎𝗉 ${targetID}:`, notifyError);
-                        }
-
-                        return message.reply(`✅ 𝖲𝗎𝖼𝖼𝖾𝗌𝗌\n\n${userName} 𝗌𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒 𝗎𝗇𝖻𝖺𝗇𝗇𝖾𝖽 𝗀𝗋𝗈𝗎𝗉:\n→ ${targetName}`);
-
-                    } catch (threadError) {
-                        console.error(`𝖤𝗋𝗋𝗈𝗋 𝗎𝗇𝖻𝖺𝗇𝗇𝗂𝗇𝗀 𝗍𝗁𝗋𝖾𝖺𝖽 ${targetID}:`, threadError);
-                        return message.reply("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗎𝗇𝖻𝖺𝗇 𝗀𝗋𝗈𝗎𝗉. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇.");
-                    }
-                }
-
-                case "unbanuser": {
-                    try {
-                        // Get user info
-                        try {
-                            targetName = await Users.getNameUser(targetID) || "𝖴𝗇𝗄𝗇𝗈𝗐𝗇 𝖴𝗌𝖾𝗋";
-                        } catch (nameError) {
-                            console.warn(`𝖢𝗈𝗎𝗅𝖽 𝗇𝗈𝗍 𝗀𝖾𝗍 𝗎𝗌𝖾𝗋 𝗇𝖺𝗆𝖾 ${targetID}:`, nameError);
-                            targetName = "𝖴𝗇𝗄𝗇𝗈𝗐𝗇 𝖴𝗌𝖾𝗋";
-                        }
-
-                        // Update user data
-                        const userDataObj = (await Users.getData(targetID)) || {};
-                        const userData = userDataObj.data || {};
-                        userData.banned = false;
-                        userData.reason = null;
-                        userData.dateAdded = null;
-
-                        await Users.setData(targetID, { data: userData });
-                        
-                        // Remove from banned list
-                        if (global.data && global.data.userBanned) {
-                            global.data.userBanned.delete(targetID);
-                        }
-                        if (global.data && global.data.userName) {
-                            global.data.userName.delete(targetID);
-                        }
-
-                        // Try to send notification to the user
-                        try {
-                            await message.reply({
-                                body: `» 𝖭𝗈𝗍𝗂𝖿𝗂𝖼𝖺𝗍𝗂𝗈𝗇 «\n\n${userName} 𝗎𝗇𝖻𝖺𝗇𝗇𝖾𝖽 𝗒𝗈𝗎 𝖿𝗋𝗈𝗆 𝖺𝖽𝗆𝗂𝗇\n\n- 𝖸𝗈𝗎'𝗏𝖾 𝖻𝖾𝖾𝗇 𝗎𝗇𝖻𝖺𝗇𝗇𝖾𝖽 𝖿𝗋𝗈𝗆 𝗍𝗁𝖾 𝖻𝗈𝗍`,
-                                attachment: null
-                            }, targetID);
-                        } catch (notifyError) {
-                            console.warn(`𝖢𝗈𝗎𝗅𝖽 𝗇𝗈𝗍 𝗌𝖾𝗇𝖽 𝗇𝗈𝗍𝗂𝖿𝗂𝖼𝖺𝗍𝗂𝗈𝗇 𝗍𝗈 𝗎𝗌𝖾𝗋 ${targetID}:`, notifyError);
-                        }
-
-                        return message.reply(`✅ 𝖲𝗎𝖼𝖼𝖾𝗌𝗌\n\n${userName} 𝗌𝗎𝖼𝖼𝖾𝗌𝗌𝖿𝗎𝗅𝗅𝗒 𝗎𝗇𝖻𝖺𝗇𝗇𝖾𝖽 𝗎𝗌𝖾𝗋:\n→ ${targetName}`);
-
-                    } catch (userError) {
-                        console.error(`𝖤𝗋𝗋𝗈𝗋 𝗎𝗇𝖻𝖺𝗇𝗇𝗂𝗇𝗀 𝗎𝗌𝖾𝗋 ${targetID}:`, userError);
-                        return message.reply("❌ 𝖥𝖺𝗂𝗅𝖾𝖽 𝗍𝗈 𝗎𝗇𝖻𝖺𝗇 𝗎𝗌𝖾𝗋. 𝖯𝗅𝖾𝖺𝗌𝖾 𝗍𝗋𝗒 𝖺𝗀𝖺𝗂𝗇.");
-                    }
-                }
-
-                default:
-                    return message.reply(this.languages.en.error_processing);
-            }
         } catch (error) {
-            console.error("💥 𝖫𝗂𝗌𝗍𝖻𝖺𝗇 𝗋𝖾𝗉𝗅𝗒 𝖾𝗋𝗋𝗈𝗋:", error);
-            return message.reply(this.languages.en.error_processing);
+            console.error("Listban Reply Error:", error);
+            message.reply(toBold("❌ 𝐅𝐚𝐢𝐥𝐞𝐝 𝐭𝐨 𝐩𝐫𝐨𝐜𝐞𝐬𝐬 𝐫𝐞𝐪𝐮𝐞𝐬𝐭."));
         }
+    },
+
+    // --- 𝟓. 𝐇𝐞𝐥𝐩𝐞𝐫: 𝐒𝐞𝐧𝐝 𝐏𝐚𝐠𝐞 ---
+    sendPage: function (message, threadID, list, page, type, author) {
+        const perPage = 10;
+        const totalPages = Math.ceil(list.length / perPage);
+        const start = (page - 1) * perPage;
+        const end = Math.min(start + perPage, list.length);
+        const pageItems = list.slice(start, end);
+
+        const title = type === "thread" ? "🚫 𝐁𝐚𝐧𝐧𝐞𝐝 𝐆𝐫𝐨𝐮𝐩𝐬" : "🚫 𝐁𝐚𝐧𝐧𝐞𝐝 𝐔𝐬𝐞𝐫𝐬";
+        
+        let msg = toBold(`${title}\n📄 𝐏𝐚𝐠𝐞: ${page}/${totalPages}\n\n`);
+
+        pageItems.forEach((item, i) => {
+            // Display Number (1-10 relative to page)
+            msg += toBold(`${i + 1}. ${item.name}\n🆔 ${item.id}\n\n`);
+        });
+
+        msg += toBold("👉 𝐑𝐞𝐩𝐥𝐲 𝐰𝐢𝐭𝐡 𝐧𝐮𝐦𝐛𝐞𝐫 𝐭𝐨 𝐔𝐍𝐁𝐀𝐍\n👉 𝐑𝐞𝐩𝐥𝐲 '𝐧𝐞𝐱𝐭' 𝐨𝐫 '𝐩𝐫𝐞𝐯' 𝐭𝐨 𝐧𝐚𝐯𝐢𝐠𝐚𝐭𝐞");
+
+        message.reply(msg, (err, info) => {
+            if (err) return;
+            global.client.handleReply.push({
+                name: this.config.name,
+                messageID: info.messageID,
+                author: author,
+                list: list,
+                page: page,
+                type: type
+            });
+        });
     }
 };
