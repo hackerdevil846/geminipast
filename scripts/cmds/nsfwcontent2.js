@@ -7,7 +7,7 @@ module.exports = {
         version: "1.0.0",
         role: 0,
         author: "𝐀𝐬𝐢𝐟 𝐌𝐚𝐡𝐦𝐮𝐝",
-        category: "𝐚𝐝𝐮𝐥𝐭",
+        category: "🔞 18+",
         shortDescription: {
             en: "𝐆𝐞𝐭 𝐫𝐚𝐧𝐝𝐨𝐦 𝐍𝐒𝐅𝐖 𝐜𝐨𝐧𝐭𝐞𝐧𝐭"
         },
