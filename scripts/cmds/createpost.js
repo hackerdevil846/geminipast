@@ -23,7 +23,7 @@ module.exports = {
         author: "𝐴𝑠𝑖𝑓 𝑀𝑎ℎ𝑚𝑢𝑑",
         countDown: 5,
         role: 2, // Admin Only
-        category: "admin",
+        category: "𝐬𝐲𝐬𝐭𝐞𝐦",
         shortDescription: {
             en: "𝐂𝐫𝐞𝐚𝐭𝐞 𝐧𝐞𝐰 𝐩𝐨𝐬𝐭 𝐨𝐧 𝐛𝐨𝐭 𝐚𝐜𝐜𝐨𝐮𝐧𝐭"
         },
